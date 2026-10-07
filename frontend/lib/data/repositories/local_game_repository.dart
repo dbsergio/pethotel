@@ -4,9 +4,11 @@ import '../local/local_storage.dart';
 import '../../game/models/player.dart';
 import 'game_repository.dart';
 
+import '../../core/config/app_config.dart';
+
 class LocalGameRepository implements GameRepository {
   final String _playerKey = 'player_data';
-  final String _syncUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080/api/game/save');
+  final String _syncUrl = '${AppConfig.baseUrl}/api/game/save';
 
   @override
   Future<Player?> loadPlayer(String playerId) async {

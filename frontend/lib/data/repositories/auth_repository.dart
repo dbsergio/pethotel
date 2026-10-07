@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../local/local_storage.dart';
 
+import '../../core/config/app_config.dart';
+
 class AuthRepository {
-  final String baseUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080');
+  final String baseUrl = AppConfig.baseUrl;
 
   Future<bool> register(String email, String password, String playerId) async {
     try {

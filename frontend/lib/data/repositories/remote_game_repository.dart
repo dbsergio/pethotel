@@ -3,8 +3,10 @@ import 'package:http/http.dart' as http;
 import '../../game/models/player.dart';
 import '../local/local_storage.dart';
 
+import '../../core/config/app_config.dart';
+
 class RemoteGameRepository {
-  final String baseUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080');
+  final String baseUrl = AppConfig.baseUrl;
 
   Future<Player?> loadRemotePlayer(String playerId) async {
     try {
