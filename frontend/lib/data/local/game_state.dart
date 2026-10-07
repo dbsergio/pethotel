@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pet.dart';
 import '../repositories/game_repository.dart';
@@ -29,29 +30,50 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  Pet? selectedPet;
+  String? selectedPetId;
+
+  Pet? get selectedPet {
+    if (player == null || selectedPetId == null) return null;
+    return player!.activePets.cast<Pet?>().firstWhere(
+      (p) => p?.id == selectedPetId,
+      orElse: () => null,
+    );
+  }
+
+  void selectPetById(String petId) {
+    if (selectedPetId != petId) {
+      selectedPetId = petId;
+      debugPrint('[STATE] selectedPetId = $selectedPetId');
+      notifyListeners();
+    }
+  }
 
   Future<void> selectPet(Pet pet) async {
-    selectedPet = pet;
-    notifyListeners();
+    selectPetById(pet.id);
   }
 
   Future<void> adoptPet(Pet pet) async {
     if (player != null) {
       if (player!.activePets.length >= player!.capacity) return;
       player!.activePets.add(pet);
-      selectedPet = pet;
+      selectedPetId = pet.id;
       await save();
       notifyListeners();
     }
   }
   bool _canAct(Pet pet) {
-    return pet.currentAction == PetAction.idle || pet.currentAction == PetAction.walking;
+    if (pet.currentAction == PetAction.idle || pet.currentAction == PetAction.walking) {
+      return true;
+    }
+    debugPrint('_canAct(${pet.name}) = false\nreason: busy with action\nstate: ${pet.currentAction.name}\n');
+    return false;
   }
 
   void _requestAction(Pet pet, PetAction intent) {
     if (_canAct(pet)) {
       pet.currentAction = intent;
+      pet.currentActionId = const Uuid().v4();
+      debugPrint('[${pet.name}] Action request: ${intent.name}, Action #${pet.currentActionId}');
       notifyListeners();
     }
   }
@@ -120,20 +142,20 @@ class GameState extends ChangeNotifier {
   }
 
   Future<void> petPet() async {
-    if (selectedPet != null && _canAct(selectedPet!)) {
-      selectedPet!.currentAction = PetAction.petting;
-      selectedPet!.stats.happiness += 10;
-      selectedPet!.stats.clamp();
-      selectedPet!.currentActionMessage = '+10 Amor';
+    final pet = selectedPet;
+    if (pet != null && _canAct(pet)) {
+      pet.currentAction = PetAction.petting;
+      pet.currentActionId = const Uuid().v4();
+      pet.stats.happiness += 10;
+      pet.stats.clamp();
+      pet.currentActionMessage = '+10 Amor';
       await save();
       notifyListeners();
       
       // Petting finishes quickly
       Future.delayed(const Duration(seconds: 2), () {
-        if (selectedPet != null && selectedPet!.currentAction == PetAction.petting) {
-          selectedPet!.currentAction = PetAction.idle;
-          selectedPet!.currentActionMessage = null;
-          notifyListeners();
+        if (pet.currentAction == PetAction.petting) {
+          endAction(pet);
         }
       });
     }
@@ -156,7 +178,20 @@ class GameState extends ChangeNotifier {
   void endAction(Pet pet) {
     pet.currentAction = PetAction.idle;
     pet.currentActionMessage = null;
+    pet.currentActionId = null;
     notifyListeners();
+  }
+
+  void resetActionState(Pet pet) {
+    debugPrint('[${pet.name}] WATCHDOG RECOVERY - Resetting state');
+    endAction(pet);
+  }
+
+  void cancelCurrentAction(Pet pet) {
+    if (pet.currentAction != PetAction.idle) {
+      debugPrint('[${pet.name}] Action cancelled explicitly');
+      resetActionState(pet);
+    }
   }
 }
 

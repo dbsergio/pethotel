@@ -15,6 +15,7 @@ class Pet {
   // Transient state for animations, not serialized
   PetAction currentAction = PetAction.idle;
   String? currentActionMessage;
+  String? currentActionId;
 
   Pet({
     String? id,
