@@ -14,10 +14,6 @@ public class MongoConfig {
 
     @Bean
     public MongoClient mongoClient() {
-        System.out.println("=========");
-        System.out.println("CUSTOM MONGO CLIENT BEAN INITIALIZING");
-        System.out.println("URI: " + uri);
-        System.out.println("=========");
         return MongoClients.create(uri);
     }
 }
