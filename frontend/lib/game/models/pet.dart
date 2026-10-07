@@ -10,6 +10,9 @@ class Pet {
   final String id;
   String name;
   String species;
+  String personality;
+  String? clientName;
+  String? clientRequest;
   PetStats stats;
   
   // Transient state for animations, not serialized
@@ -21,6 +24,9 @@ class Pet {
     String? id,
     required this.name,
     required this.species,
+    this.personality = 'Curioso',
+    this.clientName,
+    this.clientRequest,
     PetStats? stats,
   })  : id = id ?? const Uuid().v4(),
         stats = stats ?? PetStats();
@@ -30,6 +36,9 @@ class Pet {
       id: json['id'] as String,
       name: json['name'] as String,
       species: json['species'] as String,
+      personality: json['personality'] as String? ?? 'Curioso',
+      clientName: json['clientName'] as String?,
+      clientRequest: json['clientRequest'] as String?,
       stats: PetStats.fromJson(json['stats'] as Map<String, dynamic>),
     );
   }
@@ -39,6 +48,9 @@ class Pet {
       'id': id,
       'name': name,
       'species': species,
+      'personality': personality,
+      if (clientName != null) 'clientName': clientName,
+      if (clientRequest != null) 'clientRequest': clientRequest,
       'stats': stats.toJson(),
     };
   }

@@ -4,14 +4,23 @@ import 'package:mypet_frontend/data/repositories/game_repository.dart';
 import 'package:mypet_frontend/game/models/pet.dart';
 import 'package:mypet_frontend/game/models/pet_stats.dart';
 import 'package:mypet_frontend/game/models/player.dart';
+import 'package:mypet_frontend/data/services/game_sync_service.dart';
+import 'package:mypet_frontend/data/repositories/local_game_repository.dart';
+import 'package:mypet_frontend/data/repositories/remote_game_repository.dart';
 
 class MockGameRepository implements GameRepository {
   @override
   Future<Player?> loadPlayer(String playerId) async => null;
   @override
   Future<void> savePlayer(Player player) async {}
+}
+
+class MockGameSyncService extends GameSyncService {
+  MockGameSyncService() : super(localRepo: LocalGameRepository(), remoteRepo: RemoteGameRepository());
   @override
-  Future<void> syncPending() async {}
+  void markPending() {}
+  @override
+  Future<void> syncNow() async {}
 }
 
 void main() {
@@ -20,7 +29,7 @@ void main() {
     late Pet pet;
 
     setUp(() {
-      gameState = GameState(MockGameRepository());
+      gameState = GameState(MockGameRepository(), MockGameSyncService());
       pet = Pet(
         id: 'test_pet',
         name: 'Toby',

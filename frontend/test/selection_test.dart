@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mypet_frontend/data/services/game_sync_service.dart';
+import 'package:mypet_frontend/data/repositories/local_game_repository.dart';
+import 'package:mypet_frontend/data/repositories/remote_game_repository.dart';
 import 'package:mypet_frontend/data/local/game_state.dart';
 import 'package:mypet_frontend/data/repositories/game_repository.dart';
 import 'package:mypet_frontend/game/models/player.dart';
@@ -10,14 +13,20 @@ class MockGameRepository implements GameRepository {
   Future<Player?> loadPlayer(String playerId) async => null;
   @override
   Future<void> savePlayer(Player player) async {}
+}
+
+class MockGameSyncService extends GameSyncService {
+  MockGameSyncService() : super(localRepo: LocalGameRepository(), remoteRepo: RemoteGameRepository());
   @override
-  Future<void> syncPending() async {}
+  void markPending() {}
+  @override
+  Future<void> syncNow() async {}
 }
 
 void main() {
   group('Pet Selection Tests', () {
     test('Selección directa por petId', () {
-      final gameState = GameState(MockGameRepository());
+      final gameState = GameState(MockGameRepository(), MockGameSyncService());
       
       final toby = Pet(id: 'toby_1', name: 'Toby', species: 'dog', stats: PetStats());
       final luna = Pet(id: 'luna_2', name: 'Luna', species: 'cat', stats: PetStats());
@@ -34,7 +43,7 @@ void main() {
     });
 
     test('Acción iniciada sobre Toby conserva Toby.id aunque la selección cambie a Luna', () async {
-      final gameState = GameState(MockGameRepository());
+      final gameState = GameState(MockGameRepository(), MockGameSyncService());
       
       final toby = Pet(id: 'toby_1', name: 'Toby', species: 'dog', stats: PetStats());
       final luna = Pet(id: 'luna_2', name: 'Luna', species: 'cat', stats: PetStats());

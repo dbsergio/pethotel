@@ -6,9 +6,7 @@ import 'game_repository.dart';
 
 class LocalGameRepository implements GameRepository {
   final String _playerKey = 'player_data';
-  // En dev puede ser http://localhost:8080/api/game/sync
-  // En prod se usará la URL de render. Dejamos localhost por defecto para desarrollo.
-  final String _syncUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080/api/game/sync');
+  final String _syncUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080/api/game/save');
 
   @override
   Future<Player?> loadPlayer(String playerId) async {
@@ -28,6 +26,19 @@ class LocalGameRepository implements GameRepository {
   @override
   Future<void> savePlayer(Player player) async {
     final prefs = LocalStorage.prefs;
+    
+    // Adopt newer revision from background syncs if it exists
+    final currentJsonStr = prefs.getString('${_playerKey}_${player.id}');
+    if (currentJsonStr != null) {
+      try {
+        final Map<String, dynamic> currentLocalJson = jsonDecode(currentJsonStr);
+        final int prefsRev = currentLocalJson['revision'] as int? ?? player.revision;
+        if (prefsRev > player.revision) {
+          player.revision = prefsRev;
+        }
+      } catch (_) {}
+    }
+
     final jsonStr = jsonEncode(player.toJson());
     await prefs.setString('${_playerKey}_${player.id}', jsonStr);
     
@@ -35,7 +46,6 @@ class LocalGameRepository implements GameRepository {
     await prefs.setBool('sync_pending', true);
   }
 
-  @override
   Future<void> syncPending() async {
     final prefs = LocalStorage.prefs;
     final isPending = prefs.getBool('sync_pending') ?? false;
@@ -49,26 +59,43 @@ class LocalGameRepository implements GameRepository {
     if (player == null) return;
     
     try {
-      final payload = {
-        'player': {
-          'id': player.id,
-          'coins': player.coins,
-          'nurseryLevel': player.nurseryLevel,
-        },
-        'pets': player.activePets.map((p) => p.toJson()).toList(),
-      };
-      
+      final token = prefs.getString('jwt_token');
+      final headers = {'Content-Type': 'application/json'};
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+
       final response = await http.post(
         Uri.parse(_syncUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
+        headers: headers,
+        body: jsonEncode(player.toJson()),
       );
       
       if (response.statusCode == 200) {
-        await prefs.setBool('sync_pending', false);
+        final json = jsonDecode(response.body);
+        if (json['status'] == 'OK') {
+          // Sync successful. The server incremented the revision.
+          final serverSave = json['save'];
+          final newRevision = serverSave['revision'] as int;
+          
+          // Re-load the local player to avoid overwriting changes made during the HTTP call
+          final currentLocalJsonStr = prefs.getString('${_playerKey}_$playerId');
+          if (currentLocalJsonStr != null) {
+            final Map<String, dynamic> currentLocalJson = jsonDecode(currentLocalJsonStr);
+            currentLocalJson['revision'] = newRevision;
+            await prefs.setString('${_playerKey}_$playerId', jsonEncode(currentLocalJson));
+          }
+          
+          await prefs.setBool('sync_pending', false);
+          await prefs.setBool('sync_conflict', false);
+        } else if (json['status'] == 'CONFLICT') {
+          await prefs.setBool('sync_conflict', true);
+          await prefs.setString('conflict_data', response.body);
+        }
+      } else if (response.statusCode == 409) {
+        await prefs.setBool('sync_conflict', true);
+        await prefs.setString('conflict_data', response.body);
       }
     } catch (e) {
-      // Ignoramos error, se reintentará luego porque sync_pending sigue en true
+      // Ignorar error de red, se reintentará luego
     }
   }
 }

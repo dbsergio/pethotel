@@ -72,6 +72,15 @@ class ActionBehavior extends Component with ParentIsA<PetGraphicComponent>, HasG
         dest = null; // direct
         duration = 2.0;
         break;
+      case PetAction.walking_in:
+        dest = game.scenePoint(0.5, 0.6); // Center of room
+        duration = 2.0;
+        break;
+      case PetAction.walking_out:
+        // Assume door is roughly at 85% width, 30% height base
+        dest = game.scenePoint(0.85, 0.30);
+        duration = 3.0;
+        break;
       default:
         _resetAction();
         return;
@@ -114,7 +123,10 @@ class ActionBehavior extends Component with ParentIsA<PetGraphicComponent>, HasG
       case PetAction.going_to_sleep: parent.gameState.completeSleepPet(parent.pet); break;
       case PetAction.going_to_bath: parent.gameState.completeBathePet(parent.pet); break;
       case PetAction.going_to_walk: parent.gameState.completeWalkPet(parent.pet); break;
-      default: break; // Petting is handled in state directly with timer, but we still end it
+      case PetAction.walking_out: 
+        parent.gameState.finalizeWalkOut(parent.pet); 
+        return; // Pet is destroyed, do not call endAction
+      default: break; // Petting and walking_in handled in state or no-op
     }
 
     // Feedback

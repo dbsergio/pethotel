@@ -1,0 +1,9 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://sanvitero2000_db_user:z0MH6hwBVJlPZO8j@mypethotel.ohz8ya5.mongodb.net/mypet?retryWrites=true&w=majority&appName=MyPetHotel
+      database: ${MONGODB_DATABASE:mypet}
+cors:
+  allowed-origins: "*"
+server:
+  port: 8080

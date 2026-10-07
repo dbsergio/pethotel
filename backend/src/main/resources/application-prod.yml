@@ -1,16 +1,9 @@
 spring:
-  datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
+  data:
+    mongodb:
+      uri: "mongodb+srv://sanvitero2000_db_user:z0MH6hwBVJlPZO8j@mypethotel.ohz8ya5.mongodb.net/mypet?retryWrites=true&w=majority&appName=MyPetHotel"
+      database: ${MONGODB_DATABASE:mypet}
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://mypet.onrender.com}
+  allowed-origins: "*"
 server:
-  port: ${PORT:8080}
+  port: 8080

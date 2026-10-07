@@ -15,11 +15,11 @@ class PetStats {
 
   factory PetStats.fromJson(Map<String, dynamic> json) {
     return PetStats(
-      hunger: (json['hunger'] ?? 100.0) as double,
-      thirst: (json['thirst'] ?? 100.0) as double,
-      hygiene: (json['hygiene'] ?? 100.0) as double,
-      energy: (json['energy'] ?? 100.0) as double,
-      happiness: (json['happiness'] ?? 100.0) as double,
+      hunger: (json['hunger'] as num? ?? 100.0).toDouble(),
+      thirst: (json['thirst'] as num? ?? 100.0).toDouble(),
+      hygiene: (json['hygiene'] as num? ?? 100.0).toDouble(),
+      energy: (json['energy'] as num? ?? 100.0).toDouble(),
+      happiness: (json['happiness'] as num? ?? 100.0).toDouble(),
     );
   }
 

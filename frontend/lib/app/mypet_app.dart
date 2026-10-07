@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../features/home/home_screen.dart';
 import '../data/local/game_state.dart';
 import '../data/repositories/local_game_repository.dart';
+import '../data/repositories/remote_game_repository.dart';
+import '../data/services/game_sync_service.dart';
 import '../data/local/local_storage.dart';
 
 class MyPetApp extends StatelessWidget {
@@ -13,7 +15,10 @@ class MyPetApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) {
-          final gameState = GameState(LocalGameRepository());
+          final localRepo = LocalGameRepository();
+          final remoteRepo = RemoteGameRepository();
+          final syncService = GameSyncService(localRepo: localRepo, remoteRepo: remoteRepo);
+          final gameState = GameState(localRepo, syncService);
           final playerId = LocalStorage.getPlayerId();
           gameState.loadPlayer(playerId);
           return gameState;

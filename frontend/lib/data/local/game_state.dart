@@ -1,14 +1,18 @@
 import 'package:uuid/uuid.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pet.dart';
+import '../../game/models/boarding_stay.dart';
+import '../../game/models/customer.dart';
 import '../repositories/game_repository.dart';
+import '../services/game_sync_service.dart';
 import 'package:flutter/foundation.dart';
 
 class GameState extends ChangeNotifier {
   Player? player;
   final GameRepository repository;
+  final GameSyncService syncService;
 
-  GameState(this.repository);
+  GameState(this.repository, this.syncService);
 
   /// Public wrapper so Flame components (non-ChangeNotifier) can trigger UI refresh
   void requestNotify() => notifyListeners();
@@ -25,8 +29,8 @@ class GameState extends ChangeNotifier {
   Future<void> save() async {
     if (player != null) {
       await repository.savePlayer(player!);
-      // Attempt sync
-      repository.syncPending();
+      // Attempt sync via sync service
+      syncService.markPending();
     }
   }
 
@@ -52,14 +56,106 @@ class GameState extends ChangeNotifier {
     selectPetById(pet.id);
   }
 
-  Future<void> adoptPet(Pet pet) async {
+  Future<void> adoptPet(Pet pet, {Customer? customer, String? request}) async {
     if (player != null) {
       if (player!.activePets.length >= player!.capacity) return;
+      
+      // If no customer provided, create a dummy one for the old 'adopt' flow
+      final c = customer ?? Customer(name: 'Adoptante');
+      final req = request ?? 'Cuídalo mucho.';
+      
+      final stay = BoardingStay(
+        customer: c,
+        petId: pet.id,
+        request: req,
+        expectedDurationSeconds: 120, // 2 minutes for testing
+      );
+      
       player!.activePets.add(pet);
+      player!.activeStays.add(stay);
       selectedPetId = pet.id;
+      
+      // Start walk-in animation
+      pet.currentAction = PetAction.walking_in;
+      pet.currentActionId = const Uuid().v4();
+      
       await save();
       notifyListeners();
     }
+  }
+  
+  void checkStays() {
+    if (player == null) return;
+    bool changed = false;
+    for (var stay in player!.activeStays) {
+      if (stay.status == StayStatus.active && stay.isReady) {
+        stay.status = StayStatus.readyForPickup;
+        changed = true;
+      }
+    }
+    if (changed) {
+      save();
+      notifyListeners();
+    }
+  }
+
+  BoardingStay? getStayForPet(String petId) {
+    if (player == null) return null;
+    return player!.activeStays.cast<BoardingStay?>().firstWhere(
+      (s) => s?.petId == petId,
+      orElse: () => null,
+    );
+  }
+
+  Future<void> deliverPet(BoardingStay stay) async {
+    if (player == null) return;
+    
+    final pet = player!.activePets.firstWhere((p) => p.id == stay.petId);
+    
+    // Calculate satisfaction
+    int score = 0;
+    if (pet.stats.hunger > 70) score += 20;
+    if (pet.stats.thirst > 70) score += 20;
+    if (pet.stats.hygiene > 70) score += 20;
+    if (pet.stats.energy > 70) score += 20;
+    if (pet.stats.happiness > 70) score += 20;
+    
+    int stars = 1;
+    if (score >= 90) stars = 5;
+    else if (score >= 75) stars = 4;
+    else if (score >= 50) stars = 3;
+    else if (score >= 30) stars = 2;
+    
+    int baseCoins = 20;
+    int bonus = (stars - 3) * 5; 
+    int reward = (baseCoins + bonus).clamp(5, 50);
+    
+    stay.satisfaction = stars;
+    stay.rewardCoins = reward;
+    stay.status = StayStatus.completed;
+    
+    player!.coins += reward;
+    
+    // Trigger walk out animation
+    pet.currentAction = PetAction.walking_out;
+    pet.currentActionId = const Uuid().v4();
+    
+    player!.activeStays.remove(stay);
+    player!.completedStays.add(stay);
+    
+    if (selectedPetId == stay.petId) {
+      selectedPetId = null;
+    }
+    
+    await save();
+    notifyListeners();
+  }
+
+  Future<void> finalizeWalkOut(Pet pet) async {
+    if (player == null) return;
+    player!.activePets.removeWhere((p) => p.id == pet.id);
+    await save();
+    notifyListeners();
   }
   bool _canAct(Pet pet) {
     if (pet.currentAction == PetAction.idle || pet.currentAction == PetAction.walking) {

@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mypet_frontend/data/services/game_sync_service.dart';
+import 'package:mypet_frontend/data/repositories/local_game_repository.dart';
+import 'package:mypet_frontend/data/repositories/remote_game_repository.dart';
 import 'package:mypet_frontend/data/local/game_state.dart';
 import 'package:mypet_frontend/data/repositories/game_repository.dart';
 import 'package:mypet_frontend/game/models/pet.dart';
@@ -10,8 +13,14 @@ class MockGameRepository implements GameRepository {
   Future<Player?> loadPlayer(String playerId) async => null;
   @override
   Future<void> savePlayer(Player player) async {}
+}
+
+class MockGameSyncService extends GameSyncService {
+  MockGameSyncService() : super(localRepo: LocalGameRepository(), remoteRepo: RemoteGameRepository());
   @override
-  Future<void> syncPending() async {}
+  void markPending() {}
+  @override
+  Future<void> syncNow() async {}
 }
 
 void main() {
@@ -21,7 +30,7 @@ void main() {
     late Pet luna;
 
     setUp(() {
-      gameState = GameState(MockGameRepository());
+      gameState = GameState(MockGameRepository(), MockGameSyncService());
       toby = Pet(
         id: 'toby',
         name: 'Toby',

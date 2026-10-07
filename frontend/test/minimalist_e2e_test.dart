@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mypet_frontend/data/services/game_sync_service.dart';
+import 'package:mypet_frontend/data/repositories/local_game_repository.dart';
+import 'package:mypet_frontend/data/repositories/remote_game_repository.dart';
 import 'package:mypet_frontend/data/local/game_state.dart';
 import 'package:mypet_frontend/data/repositories/game_repository.dart';
 import 'package:mypet_frontend/game/models/player.dart';
@@ -11,15 +14,21 @@ class MockGameRepository implements GameRepository {
   Future<Player?> loadPlayer(String playerId) async => null;
   @override
   Future<void> savePlayer(Player player) async {}
+}
+
+class MockGameSyncService extends GameSyncService {
+  MockGameSyncService() : super(localRepo: LocalGameRepository(), remoteRepo: RemoteGameRepository());
   @override
-  Future<void> syncPending() async {}
+  void markPending() {}
+  @override
+  Future<void> syncNow() async {}
 }
 
 void main() {
   test('Test Minimalista (E2E Logic Flow): Comer', () async {
     // 1. Setup
     SharedPreferences.setMockInitialValues({});
-    final gameState = GameState(MockGameRepository());
+    final gameState = GameState(MockGameRepository(), MockGameSyncService());
     
     // Add pet and select it
     gameState.player = Player(id: 'test_player')..activePets.addAll([
