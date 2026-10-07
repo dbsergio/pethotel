@@ -13,6 +13,7 @@ import 'pet_info_panel.dart';
 import '../../data/local/local_storage.dart' as import_local_storage;
 import '../../data/services/game_sync_service.dart' as import_game_sync;
 import '../auth/auth_dialog.dart';
+import '../../data/repositories/auth_repository.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Breakpoints
@@ -179,20 +180,32 @@ class _SyncIndicator extends StatelessWidget {
     return ListenableBuilder(
       listenable: syncService,
       builder: (context, _) {
+        final authRepo = AuthRepository();
+        final isLoggedIn = authRepo.isLoggedIn();
+
         IconData icon;
         Color color;
         String tooltip;
-        switch (syncService.status) {
-          case import_game_sync.SyncStatus.synced:
-            icon = Icons.cloud_done; color = Colors.green; tooltip = '☁ Guardado'; break;
-          case import_game_sync.SyncStatus.syncing:
-            icon = Icons.cloud_upload; color = Colors.blue; tooltip = '☁ Sincronizando...'; break;
-          case import_game_sync.SyncStatus.pending:
-          case import_game_sync.SyncStatus.error:
-            icon = Icons.cloud_off; color = Colors.grey; tooltip = '⚠ Pendiente de sincronizar'; break;
-          case import_game_sync.SyncStatus.conflict:
-            icon = Icons.warning; color = Colors.red; tooltip = '⚠ Conflicto de guardado'; break;
+
+        if (!isLoggedIn) {
+          icon = Icons.cloud_off;
+          color = Colors.grey;
+          tooltip = '☁ Solo local';
+        } else {
+          switch (syncService.status) {
+            case import_game_sync.SyncStatus.synced:
+              icon = Icons.cloud_done; color = Colors.green; tooltip = '☁ Guardado'; break;
+            case import_game_sync.SyncStatus.syncing:
+              icon = Icons.cloud_upload; color = Colors.blue; tooltip = '☁ Sincronizando...'; break;
+            case import_game_sync.SyncStatus.pending:
+              icon = Icons.cloud_queue; color = Colors.orange; tooltip = '⚠ Pendiente de sincronizar'; break;
+            case import_game_sync.SyncStatus.error:
+              icon = Icons.cloud_off; color = Colors.red; tooltip = '⚠ Sin conexión'; break;
+            case import_game_sync.SyncStatus.conflict:
+              icon = Icons.warning; color = Colors.red; tooltip = '⚠ Conflicto de sincronización'; break;
+          }
         }
+        
         return Tooltip(
           message: tooltip,
           child: Icon(icon, color: color, size: 20),
