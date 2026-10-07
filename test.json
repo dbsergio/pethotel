@@ -1,0 +1,18 @@
+{
+  "player": {
+    "id": "1234",
+    "coins": 100
+  },
+  "currentPet": {
+    "id": "1",
+    "name": "Luna",
+    "species": "dog",
+    "stats": {
+      "hunger": 100,
+      "thirst": 100,
+      "hygiene": 100,
+      "energy": 100,
+      "happiness": 100
+    }
+  }
+}
