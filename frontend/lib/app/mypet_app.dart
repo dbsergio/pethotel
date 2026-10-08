@@ -6,6 +6,7 @@ import '../data/repositories/local_game_repository.dart';
 import '../data/repositories/remote_game_repository.dart';
 import '../data/services/game_sync_service.dart';
 import '../data/local/local_storage.dart';
+import '../core/audio/audio_service.dart';
 
 class MyPetApp extends StatelessWidget {
   const MyPetApp({super.key});
@@ -14,6 +15,12 @@ class MyPetApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) {
+          final audio = AudioService();
+          // Intentar iniciar la música de fondo al abrir (sujeto a autoplay policies en web)
+          audio.playBgm();
+          return audio;
+        }),
         ChangeNotifierProvider(create: (_) {
           final localRepo = LocalGameRepository();
           final remoteRepo = RemoteGameRepository();

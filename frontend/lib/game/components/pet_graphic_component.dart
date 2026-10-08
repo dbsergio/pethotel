@@ -18,7 +18,7 @@ import 'vector_shapes.dart';
 const int kPetPriority = 10;
 
 class PetGraphicComponent extends PositionComponent
-    with HasGameReference<MyPetGame>, TapCallbacks {
+    with HasGameReference<MyPetGame>, TapCallbacks, DragCallbacks {
   final Pet pet;
   final GameState gameState;
 
@@ -88,22 +88,49 @@ class PetGraphicComponent extends PositionComponent
 
     final Color primaryColor;
     final Color secondaryColor;
+    Vector2 bodySize = Vector2(55, 35);
+    Vector2 headSize = Vector2(35, 30);
+    Vector2 headPos = Vector2(22, -15);
+    Vector2 tailSize = Vector2(25, 8);
+    Vector2 tailPos = Vector2(-25, -5);
+    double tailRadius = 4;
+    Vector2 legSize = Vector2(8, 22);
+
     switch (pet.species) {
       case 'cat':
         primaryColor = const Color(0xFFF4A460); // Sandy brown
         secondaryColor = const Color(0xFFD2691E); // Chocolate
+        bodySize = Vector2(50, 30); // Stylized
+        headPos = Vector2(20, -15);
+        tailSize = Vector2(35, 6);  // Long thin tail
+        tailPos = Vector2(-22, -10);
         break;
       case 'rabbit':
         primaryColor = const Color(0xFFFFFFFF);
         secondaryColor = const Color(0xFFFFB6C1); // Pink
+        bodySize = Vector2(45, 40); // Rounded silhouette
+        tailSize = Vector2(12, 12); // Small tail
+        tailPos = Vector2(-20, 0); 
+        tailRadius = 6;
+        legSize = Vector2(10, 20); // thicker back legs
         break;
       case 'hamster':
         primaryColor = const Color(0xFFFFD700); // Gold
         secondaryColor = const Color(0xFFDAA520); // Goldenrod
+        bodySize = Vector2(40, 35); // Small round body
+        headSize = Vector2(30, 25);
+        headPos = Vector2(15, -10); // Head closer to body
+        tailSize = Vector2(6, 6);   // Tiny tail
+        tailPos = Vector2(-15, 0);
+        legSize = Vector2(6, 12);   // short legs
         break;
       default: // dog
         primaryColor = const Color(0xFF8B4513); // Saddle brown
         secondaryColor = const Color(0xFFA0522D); // Sienna
+        bodySize = Vector2(60, 40); // Robust
+        headSize = Vector2(40, 35);
+        headPos = Vector2(25, -12);
+        tailSize = Vector2(20, 10); // Thicker tail
         break;
     }
 
@@ -117,10 +144,10 @@ class PetGraphicComponent extends PositionComponent
       final isFront = i < 2;
       final isRight = i % 2 == 0;
       final leg = RoundedRectangleComponent(
-        size: Vector2(8, 22),
+        size: legSize,
         paint: isRight ? paintPrimary : paintSecondary,
         radius: 4,
-        position: Vector2(isFront ? 12 : -12, 10),
+        position: Vector2(isFront ? bodySize.x * 0.2 : -bodySize.x * 0.2, bodySize.y * 0.2),
         anchor: Anchor.topCenter,
       );
       legs.add(leg);
@@ -129,17 +156,17 @@ class PetGraphicComponent extends PositionComponent
 
     // Tail
     tail = RoundedRectangleComponent(
-      size: Vector2(25, 8),
+      size: tailSize,
       paint: paintPrimary,
-      radius: 4,
-      position: Vector2(-25, -5),
+      radius: tailRadius,
+      position: tailPos,
       anchor: Anchor.centerRight,
     );
     animalCore.add(tail);
 
     // Body
     body = EllipseComponent(
-      size: Vector2(55, 35),
+      size: bodySize,
       paint: paintPrimary,
       position: Vector2(0, 0),
       anchor: Anchor.center,
@@ -148,31 +175,44 @@ class PetGraphicComponent extends PositionComponent
 
     // Head
     head = EllipseComponent(
-      size: Vector2(35, 30),
+      size: headSize,
       paint: paintPrimary,
-      position: Vector2(22, -15),
+      position: headPos,
       anchor: Anchor.center,
     );
     animalCore.add(head);
 
-    // Ears
+    // Ears & Features
     if (pet.species == 'rabbit') {
-      head.add(EllipseComponent(size: Vector2(8, 25), paint: paintSecondary, position: Vector2(10, -15), anchor: Anchor.bottomCenter));
-      head.add(EllipseComponent(size: Vector2(8, 25), paint: paintPrimary, position: Vector2(25, -15), anchor: Anchor.bottomCenter));
+      head.add(EllipseComponent(size: Vector2(8, 25), paint: paintSecondary, position: Vector2(headSize.x*0.3, -headSize.y*0.3), anchor: Anchor.bottomCenter));
+      head.add(EllipseComponent(size: Vector2(8, 25), paint: paintPrimary, position: Vector2(headSize.x*0.7, -headSize.y*0.3), anchor: Anchor.bottomCenter));
+      // Bunny nose
+      head.add(EllipseComponent(size: Vector2(6, 4), paint: paintSecondary, position: Vector2(headSize.x*0.8, headSize.y*0.55), anchor: Anchor.center));
     } else if (pet.species == 'cat') {
-      head.add(TriangleComponent(size: Vector2(12, 12), paint: paintSecondary, position: Vector2(8, -8), anchor: Anchor.bottomCenter));
-      head.add(TriangleComponent(size: Vector2(12, 12), paint: paintPrimary, position: Vector2(27, -8), anchor: Anchor.bottomCenter));
-    } else { // dog & hamster
-      head.add(EllipseComponent(size: Vector2(10, 15), paint: paintSecondary, position: Vector2(8, -2), anchor: Anchor.topCenter));
-      head.add(EllipseComponent(size: Vector2(10, 15), paint: paintPrimary, position: Vector2(27, -2), anchor: Anchor.topCenter));
+      head.add(TriangleComponent(size: Vector2(12, 12), paint: paintSecondary, position: Vector2(headSize.x*0.2, -headSize.y*0.1), anchor: Anchor.bottomCenter));
+      head.add(TriangleComponent(size: Vector2(12, 12), paint: paintPrimary, position: Vector2(headSize.x*0.8, -headSize.y*0.1), anchor: Anchor.bottomCenter));
+      // Cat whiskers
+      head.add(RoundedRectangleComponent(size: Vector2(12, 1), paint: paintBlack, radius: 0, position: Vector2(headSize.x*0.8, headSize.y*0.6), anchor: Anchor.centerRight));
+      head.add(RoundedRectangleComponent(size: Vector2(12, 1), paint: paintBlack, radius: 0, position: Vector2(headSize.x*0.8, headSize.y*0.7), anchor: Anchor.centerRight));
+    } else if (pet.species == 'hamster') {
+      // Small round ears
+      head.add(EllipseComponent(size: Vector2(12, 12), paint: paintSecondary, position: Vector2(headSize.x*0.2, 0), anchor: Anchor.bottomCenter));
+      head.add(EllipseComponent(size: Vector2(12, 12), paint: paintPrimary, position: Vector2(headSize.x*0.8, 0), anchor: Anchor.bottomCenter));
+      // Chubby cheeks
+      head.add(EllipseComponent(size: Vector2(10, 8), paint: paintSecondary, position: Vector2(headSize.x*0.7, headSize.y*0.7), anchor: Anchor.center));
+    } else { // dog
+      // Floppy ears
+      head.add(EllipseComponent(size: Vector2(14, 22), paint: paintSecondary, position: Vector2(headSize.x*0.2, headSize.y*0.1), anchor: Anchor.topCenter));
+      head.add(EllipseComponent(size: Vector2(14, 22), paint: paintPrimary, position: Vector2(headSize.x*0.8, headSize.y*0.1), anchor: Anchor.topCenter));
+      // Marked snout
+      head.add(EllipseComponent(size: Vector2(18, 12), paint: paintSecondary, position: Vector2(headSize.x*0.8, headSize.y*0.6), anchor: Anchor.center));
+      head.add(EllipseComponent(size: Vector2(8, 6), paint: paintBlack, position: Vector2(headSize.x*0.9, headSize.y*0.55), anchor: Anchor.center));
     }
 
     // Eyes
-    head.add(EllipseComponent(size: Vector2(4, 5), paint: paintBlack, position: Vector2(22, 8), anchor: Anchor.center));
-    head.add(EllipseComponent(size: Vector2(4, 5), paint: paintBlack, position: Vector2(30, 8), anchor: Anchor.center));
-    
-    // Nose
-    head.add(EllipseComponent(size: Vector2(5, 3), paint: paintBlack, position: Vector2(26, 16), anchor: Anchor.center));
+    head.add(EllipseComponent(size: Vector2(4, 5), paint: paintBlack, position: Vector2(headSize.x*0.6, headSize.y*0.3), anchor: Anchor.center));
+    head.add(EllipseComponent(size: Vector2(4, 5), paint: paintBlack, position: Vector2(headSize.x*0.85, headSize.y*0.3), anchor: Anchor.center));
+
 
     nameText = TextComponent(
       text: pet.name,
@@ -262,15 +302,21 @@ class PetGraphicComponent extends PositionComponent
     switch (action) {
       case PetAction.idle:
         // Subtle breathing
+        double breatheScale = pet.species == 'hamster' ? 0.98 : 0.95;
+        double breatheDuration = pet.species == 'hamster' ? 0.8 : 1.2;
         _addEffect(animalCore, ScaleEffect.by(
-          Vector2(1.0, 0.95),
-          EffectController(duration: 1.2, alternate: true, infinite: true),
+          Vector2(1.0, breatheScale),
+          EffectController(duration: breatheDuration, alternate: true, infinite: true),
         ));
-        // Slow tail wag
-        _addEffect(tail, RotateEffect.to(
-          0.2,
-          EffectController(duration: 1.5, alternate: true, infinite: true),
-        ));
+        // Tail wag
+        if (pet.species == 'cat') {
+          _addEffect(tail, RotateEffect.to(0.5, EffectController(duration: 1.0, alternate: true, infinite: true)));
+        } else if (pet.species == 'dog') {
+          _addEffect(tail, RotateEffect.to(0.2, EffectController(duration: 1.5, alternate: true, infinite: true)));
+        } else if (pet.species == 'rabbit') {
+          // Rabbit nose twitch
+          _addEffect(head, MoveEffect.by(Vector2(1, 0), EffectController(duration: 0.2, alternate: true, infinite: true, startDelay: 2.0)));
+        }
         break;
       
       case PetAction.walking:
@@ -279,9 +325,11 @@ class PetGraphicComponent extends PositionComponent
       case PetAction.walking_in:
       case PetAction.walking_out:
         // Bobbing body
+        double bounceY = pet.species == 'rabbit' ? -12 : -6;
+        double bounceDuration = pet.species == 'rabbit' ? 0.2 : 0.15;
         _addEffect(animalCore, MoveEffect.by(
-          Vector2(0, -6),
-          EffectController(duration: 0.15, alternate: true, infinite: true),
+          Vector2(0, bounceY),
+          EffectController(duration: bounceDuration, alternate: true, infinite: true),
         ));
         // Moving legs
         for (int i = 0; i < legs.length; i++) {
@@ -292,11 +340,12 @@ class PetGraphicComponent extends PositionComponent
             EffectController(duration: 0.15, alternate: true, infinite: true),
           ));
         }
-        // Fast tail wag
-        _addEffect(tail, RotateEffect.to(
-          0.3,
-          EffectController(duration: 0.15, alternate: true, infinite: true),
-        ));
+        // Tail wag
+        if (pet.species == 'dog') {
+          _addEffect(tail, RotateEffect.to(0.4, EffectController(duration: 0.1, alternate: true, infinite: true)));
+        } else if (pet.species == 'cat') {
+          _addEffect(tail, RotateEffect.to(0.6, EffectController(duration: 0.2, alternate: true, infinite: true)));
+        }
         break;
       
       case PetAction.eating:
@@ -363,6 +412,22 @@ class PetGraphicComponent extends PositionComponent
     }
     event.handled = true;
     super.onTapDown(event);
+  }
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    // Consumir el drag para que no se propague al MyPetGame y no mueva la cámara
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    // No hacer nada, pero al estar aquí el componente absorbe el drag
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
   }
 
   @override

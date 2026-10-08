@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../data/local/game_state.dart';
 import '../../game/models/shop_item.dart';
 import '../economy/widgets/coin_counter_widget.dart';
+import '../../core/audio/audio_service.dart';
 
 class ShopScreen extends StatelessWidget {
   const ShopScreen({super.key});
@@ -168,10 +169,13 @@ class _ShopItemCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: (alreadyOwned || !hasCoins)
-                          ? null
+                          ? () {
+                              context.read<AudioService>().playUiError();
+                            }
                           : () async {
                               final success = await gameState.buyItem(item.id);
                               if (success && context.mounted) {
+                                context.read<AudioService>().playShopPurchase();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Row(

@@ -107,15 +107,14 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    // Priority 0 → hit-tested LAST, so pets (priority 10) win
-    add(NurseryBackgroundComponent()..priority = 0);
+    world.add(NurseryBackgroundComponent()..priority = 0);
     // Objects at priority 5 — interactive but below pets
-    add(CarpetComponent(position: scenePoint(kCarpet.dx, kCarpet.dy))..priority = 5);
-    add(BedComponent(position: scenePoint(kBed.dx, kBed.dy))..priority = 5);
-    add(FoodBowlComponent(position: scenePoint(kFoodBowl.dx, kFoodBowl.dy))..priority = 5);
-    add(WaterBowlComponent(position: scenePoint(kWaterBowl.dx, kWaterBowl.dy))..priority = 5);
-    add(ToyComponent(position: scenePoint(kToy.dx, kToy.dy))..priority = 5);
-    add(BathComponent(position: scenePoint(kBath.dx, kBath.dy))..priority = 5);
+    world.add(CarpetComponent(position: scenePoint(kCarpet.dx, kCarpet.dy))..priority = 5);
+    world.add(BedComponent(position: scenePoint(kBed.dx, kBed.dy))..priority = 5);
+    world.add(FoodBowlComponent(position: scenePoint(kFoodBowl.dx, kFoodBowl.dy))..priority = 5);
+    world.add(WaterBowlComponent(position: scenePoint(kWaterBowl.dx, kWaterBowl.dy))..priority = 5);
+    world.add(ToyComponent(position: scenePoint(kToy.dx, kToy.dy))..priority = 5);
+    world.add(BathComponent(position: scenePoint(kBath.dx, kBath.dy))..priority = 5);
     _syncPets();
   }
 
@@ -159,7 +158,7 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
               position: startPos,
             );
             cust.priority = 15;
-            add(cust);
+            world.add(cust);
             
             // Spread them out slightly around reception
             final offsetIndex = _retrievingCustomers.length;
@@ -217,7 +216,7 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
           spawnPosition: spawnPos,
         );
         _petComponents[pet.id] = comp;
-        add(comp);
+        world.add(comp);
       }
     }
   }
@@ -232,7 +231,7 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
       position: startPos,
     );
     _incomingCustomer!.priority = 15; // Above pets
-    add(_incomingCustomer!);
+    world.add(_incomingCustomer!);
 
     _incomingPet = PetGraphicComponent(
       pet: pet,
@@ -240,7 +239,7 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
       spawnPosition: startPos + Vector2(20, 20),
     );
     _incomingPet!.priority = 10;
-    add(_incomingPet!);
+    world.add(_incomingPet!);
 
     // They walk to the center
     final receptionPos = scenePoint(0.5, 0.5);
@@ -299,7 +298,7 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
       onComplete: () {}, // Handled internally
     );
     toy.priority = 20; // Above everything
-    add(toy);
+    world.add(toy);
   }
 
   /// Convert normalised (0-1) to virtual pixels

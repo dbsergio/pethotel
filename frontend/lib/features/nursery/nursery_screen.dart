@@ -19,6 +19,8 @@ import 'minigames/eat_minigame.dart';
 import 'minigames/drink_minigame.dart';
 import 'minigames/bath_minigame.dart';
 import 'minigames/petting_minigame.dart';
+import '../../core/audio/audio_service.dart';
+import 'package:provider/provider.dart';
 import '../../game/minigames/minigame_result.dart';
 import '../economy/widgets/coin_counter_widget.dart';
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,14 +117,24 @@ class _TopBar extends StatelessWidget {
                   icon: Icons.store_rounded, 
                   color: Colors.orange[300]!, 
                   tooltip: 'Tienda', 
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
+                  onPressed: () => Navigator.push(context, PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => const ShopScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return SlideTransition(position: Tween(begin: const Offset(0.0, 1.0), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutQuart)), child: child);
+                    },
+                  )),
                 ),
                 _buildHudIconButton(
                   context, 
                   icon: Icons.backpack_rounded, 
                   color: Colors.lightBlue[300]!, 
                   tooltip: 'Inventario', 
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen())),
+                  onPressed: () => Navigator.push(context, PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => const InventoryScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return SlideTransition(position: Tween(begin: const Offset(0.0, 1.0), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutQuart)), child: child);
+                    },
+                  )),
                 ),
                 Consumer<GameState>(
                   builder: (_, gs, __) {
@@ -150,8 +162,10 @@ class _TopBar extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     onSelected: (value) {
                       if (value == 'dev') _showDevOptions(context);
+                      if (value == 'options') _showAudioOptions(context);
                     },
                     itemBuilder: (context) => [
+                      const PopupMenuItem(value: 'options', child: Text('Opciones (Audio)')),
                       const PopupMenuItem(value: 'dev', child: Text('Desarrollo')),
                     ],
                   ),
@@ -177,7 +191,54 @@ class _TopBar extends StatelessWidget {
         tooltip: tooltip,
         constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
         padding: EdgeInsets.zero,
-        onPressed: onPressed,
+        onPressed: () {
+          context.read<AudioService>().playUiTap();
+          onPressed();
+        },
+      ),
+    );
+  }
+
+  void _showAudioOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFFFFF3E0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF6D4C41), width: 3),
+        ),
+        title: const Text('Opciones', style: TextStyle(color: Color(0xFF4E342E), fontWeight: FontWeight.bold)),
+        content: Consumer<AudioService>(
+          builder: (context, audio, child) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text('Efectos de Sonido (SFX)', style: TextStyle(color: Color(0xFF4E342E), fontWeight: FontWeight.bold)),
+                  value: audio.sfxEnabled,
+                  onChanged: (val) => audio.toggleSfx(),
+                  activeColor: Colors.green,
+                ),
+                SwitchListTile(
+                  title: const Text('Música (BGM)', style: TextStyle(color: Color(0xFF4E342E), fontWeight: FontWeight.bold)),
+                  value: audio.musicEnabled,
+                  onChanged: (val) => audio.toggleMusic(),
+                  activeColor: Colors.green,
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<AudioService>().playUiClose();
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Cerrar', style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -497,27 +558,36 @@ class _ActionBar extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         child: Row(
           children: [
-            _actionBtn('🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
-            _actionBtn('💧', 'Beber',  () => _startDrinkMinigame(context, gameState, pet)),
-            _actionBtn('🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
-            _actionBtn('🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
-            _actionBtn('❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
-            _actionBtn('😴', 'Dormir', () => gameState.sleepPet()),
-            _actionBtn('🚶', 'Pasear', () => gameState.walkPet()),
+            _actionBtn(context, '🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
+            _actionBtn(context, '💧', 'Beber',  () => _startDrinkMinigame(context, gameState, pet)),
+            _actionBtn(context, '🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
+            _actionBtn(context, '🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
+            _actionBtn(context, '❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
+            _actionBtn(context, '😴', 'Dormir', () {
+              context.read<AudioService>().playActionSleep();
+              gameState.sleepPet();
+            }),
+            _actionBtn(context, '🚶', 'Pasear', () {
+              context.read<AudioService>().playActionPlay();
+              gameState.walkPet();
+            }),
           ],
         ),
       ),
     );
   }
 
-  Widget _actionBtn(String icon, String label, VoidCallback onTap) {
+  Widget _actionBtn(BuildContext context, String icon, String label, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ElevatedButton(
-            onPressed: onTap,
+            onPressed: () {
+              context.read<AudioService>().playUiTap();
+              onTap();
+            },
             style: ElevatedButton.styleFrom(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -563,24 +633,33 @@ class _ActionGrid extends StatelessWidget {
         runSpacing: 8,
         alignment: WrapAlignment.center,
         children: [
-          _actionBtn('🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
-          _actionBtn('💧', 'Beber',  () => _startDrinkMinigame(context, gameState, pet)),
-          _actionBtn('🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
-          _actionBtn('🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
-          _actionBtn('❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
-          _actionBtn('😴', 'Dormir', () => gameState.sleepPet()),
-          _actionBtn('🚶', 'Pasear', () => gameState.walkPet()),
+          _actionBtn(context, '🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
+          _actionBtn(context, '💧', 'Beber',  () => _startDrinkMinigame(context, gameState, pet)),
+          _actionBtn(context, '🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
+          _actionBtn(context, '🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
+          _actionBtn(context, '❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
+          _actionBtn(context, '😴', 'Dormir', () {
+            context.read<AudioService>().playActionSleep();
+            gameState.sleepPet();
+          }),
+          _actionBtn(context, '🚶', 'Pasear', () {
+            context.read<AudioService>().playActionPlay();
+            gameState.walkPet();
+          }),
         ],
       ),
     );
   }
 
-  Widget _actionBtn(String icon, String label, VoidCallback onTap) {
+  Widget _actionBtn(BuildContext context, String icon, String label, VoidCallback onTap) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         ElevatedButton(
-          onPressed: onTap,
+          onPressed: () {
+            context.read<AudioService>().playUiTap();
+            onTap();
+          },
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -803,6 +882,8 @@ void _startFeedMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => EatMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
+       context.read<AudioService>().playActionEat();
+       if (result.success) context.read<AudioService>().playRewardCoins();
        gs.feedPet(result: result);
     }
   });
@@ -814,6 +895,8 @@ void _startDrinkMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => DrinkMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
+       context.read<AudioService>().playActionDrink();
+       if (result.success) context.read<AudioService>().playRewardCoins();
        gs.drinkPet(result: result);
     }
   });
@@ -825,6 +908,8 @@ void _startBathMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => BathMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
+       context.read<AudioService>().playActionBath();
+       if (result.success) context.read<AudioService>().playRewardCoins();
        gs.bathePet(result: result);
     }
   });
@@ -836,6 +921,8 @@ void _startPettingMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => PettingMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
+       context.read<AudioService>().playActionPetting();
+       if (result.success) context.read<AudioService>().playRewardCoins();
        gs.petPet(result: result);
     }
   });
