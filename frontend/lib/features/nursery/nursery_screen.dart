@@ -60,7 +60,7 @@ class _NurseryScreenState extends State<NurseryScreen> {
             ),
             Positioned(
               top: 0, left: 0, right: 0,
-              child: _TopBar(game: _game),
+              child: _TopBar(game: _game, isDesktop: isDesktop),
             ),
           ],
         ),
@@ -74,7 +74,8 @@ class _NurseryScreenState extends State<NurseryScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
   final MyPetGame game;
-  const _TopBar({required this.game});
+  final bool isDesktop;
+  const _TopBar({required this.game, required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
@@ -90,63 +91,72 @@ class _TopBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            '🐾 MYPET',
-            style: TextStyle(
-              fontSize: 22, 
-              fontWeight: FontWeight.w900, 
-              color: Color(0xFFFFE082),
-              shadows: [Shadow(color: Colors.black54, offset: Offset(1, 2), blurRadius: 2)],
-              letterSpacing: 1.2,
-            ),
-          ),
-          Row(
-            children: [
-              _buildHudIconButton(
-                context, 
-                icon: Icons.store_rounded, 
-                color: Colors.orange[300]!, 
-                tooltip: 'Tienda', 
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
+          if (isDesktop || MediaQuery.sizeOf(context).width > 450)
+            const Text(
+              '🐾 MYPET',
+              style: TextStyle(
+                fontSize: 22, 
+                fontWeight: FontWeight.w900, 
+                color: Color(0xFFFFE082),
+                shadows: [Shadow(color: Colors.black54, offset: Offset(1, 2), blurRadius: 2)],
+                letterSpacing: 1.2,
               ),
-              _buildHudIconButton(
-                context, 
-                icon: Icons.backpack_rounded, 
-                color: Colors.lightBlue[300]!, 
-                tooltip: 'Inventario', 
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen())),
-              ),
-              Consumer<GameState>(
-                builder: (_, gs, __) {
-                  return Row(
-                    children: [
-                      _SyncIndicator(syncService: gs.syncService),
-                      const SizedBox(width: 8),
-                      const CoinCounterWidget(),
-                    ],
-                  );
-                },
-              ),
-              _buildHudIconButton(
-                context, 
-                icon: Icons.person_rounded, 
-                color: Colors.white70, 
-                tooltip: 'Cuenta', 
-                onPressed: () => _showAuthDialog(context),
-              ),
-              Theme(
-                data: Theme.of(context).copyWith(iconTheme: const IconThemeData(color: Colors.white70)),
-                child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (value) {
-                    if (value == 'dev') _showDevOptions(context);
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'dev', child: Text('Opciones de Desarrollo')),
-                  ],
+            )
+          else
+            const Text('🐾', style: TextStyle(fontSize: 24)),
+          
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildHudIconButton(
+                  context, 
+                  icon: Icons.store_rounded, 
+                  color: Colors.orange[300]!, 
+                  tooltip: 'Tienda', 
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
                 ),
-              ),
-            ],
+                _buildHudIconButton(
+                  context, 
+                  icon: Icons.backpack_rounded, 
+                  color: Colors.lightBlue[300]!, 
+                  tooltip: 'Inventario', 
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen())),
+                ),
+                Consumer<GameState>(
+                  builder: (_, gs, __) {
+                    return Row(
+                      children: [
+                        _SyncIndicator(syncService: gs.syncService),
+                        const SizedBox(width: 4),
+                        const CoinCounterWidget(),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(width: 4),
+                _buildHudIconButton(
+                  context, 
+                  icon: Icons.person_rounded, 
+                  color: Colors.white70, 
+                  tooltip: 'Cuenta', 
+                  onPressed: () => _showAuthDialog(context),
+                ),
+                Theme(
+                  data: Theme.of(context).copyWith(iconTheme: const IconThemeData(color: Colors.white70)),
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    padding: EdgeInsets.zero,
+                    onSelected: (value) {
+                      if (value == 'dev') _showDevOptions(context);
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(value: 'dev', child: Text('Desarrollo')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -162,9 +172,9 @@ class _TopBar extends StatelessWidget {
         border: Border.all(color: const Color(0xFF3E2723), width: 2),
       ),
       child: IconButton(
-        icon: Icon(icon, color: color, size: 22),
+        icon: Icon(icon, color: color, size: 20),
         tooltip: tooltip,
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
         padding: EdgeInsets.zero,
         onPressed: onPressed,
       ),

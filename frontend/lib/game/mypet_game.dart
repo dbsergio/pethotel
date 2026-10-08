@@ -48,6 +48,28 @@ class MyPetGame extends FlameGame with TapCallbacks {
   @override
   Color backgroundColor() => Colors.orange[100]!;
 
+  Vector2 get virtualSize {
+    const double baseWidth = 800.0;
+    if (size.x < baseWidth) {
+      final ratio = baseWidth / size.x;
+      return Vector2(baseWidth, size.y * ratio);
+    }
+    return size;
+  }
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    const double baseWidth = 800.0;
+    if (size.x < baseWidth) {
+      camera.viewfinder.zoom = size.x / baseWidth;
+      camera.viewfinder.position = Vector2(virtualSize.x / 2, virtualSize.y / 2);
+    } else {
+      camera.viewfinder.zoom = 1.0;
+      camera.viewfinder.position = Vector2(size.x / 2, size.y / 2);
+    }
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -246,14 +268,14 @@ class MyPetGame extends FlameGame with TapCallbacks {
     add(toy);
   }
 
-  /// Convert normalised (0-1) to canvas pixels
-  Vector2 scenePoint(double nx, double ny) => Vector2(size.x * nx, size.y * ny);
+  /// Convert normalised (0-1) to virtual pixels
+  Vector2 scenePoint(double nx, double ny) => Vector2(virtualSize.x * nx, virtualSize.y * ny);
 
   Rect get playableRect => Rect.fromLTRB(
     60,
-    size.y * _kWallBottom + 40,
-    size.x - 60,
-    size.y - _kHudMargin,
+    virtualSize.y * _kWallBottom + 40,
+    virtualSize.x - 60,
+    virtualSize.y - _kHudMargin,
   );
 }
 
@@ -264,7 +286,7 @@ class NurseryBackgroundComponent extends PositionComponent with HasGameReference
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    size = game.size;
+    size = game.virtualSize;
 
     // Window with sunlight effect
     add(_WindowLightComponent());
@@ -273,7 +295,7 @@ class NurseryBackgroundComponent extends PositionComponent with HasGameReference
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    this.size = size;
+    this.size = game.virtualSize;
   }
 
   @override
@@ -365,8 +387,8 @@ class _WindowLightComponent extends PositionComponent with HasGameReference<MyPe
 
   @override
   void render(Canvas canvas) {
-    final w = game.size.x;
-    final h = game.size.y;
+    final w = game.virtualSize.x;
+    final h = game.virtualSize.y;
 
     // Window frame on the wall
     canvas.drawRect(Rect.fromLTWH(w * 0.15 - 4, h * 0.05 - 4, 128, 108), Paint()..color = const Color(0xFFE0F7FA));
