@@ -161,5 +161,25 @@ void main() {
       // Luna should still be playing
       expect(luna.currentAction, PetAction.going_to_play);
     });
+
+    test('Cancelación de acción en curso al solicitar nueva acción', () async {
+      gameState.selectPetById(toby.id);
+      
+      // 1. Iniciar acción A (Comer)
+      await gameState.feedPet();
+      expect(toby.currentAction, PetAction.going_to_eat);
+      
+      // 2. Iniciar acción B (Bañar) inmediatamente (simulando que aún no llegó al bowl)
+      await gameState.bathePet();
+      
+      // El state debería ser PetAction.going_to_bath porque la anterior fue cancelada por _requestAction
+      expect(toby.currentAction, PetAction.going_to_bath);
+      
+      // 3. Completar acción B
+      await gameState.completeBathePet(toby);
+      gameState.endAction(toby);
+      
+      expect(toby.currentAction, PetAction.idle);
+    });
   });
 }

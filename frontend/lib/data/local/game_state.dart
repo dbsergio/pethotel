@@ -22,7 +22,13 @@ class GameState extends ChangeNotifier {
   Future<void> loadPlayer(String playerId) async {
     player = await repository.loadPlayer(playerId);
     if (player == null) {
-      player = Player(id: playerId);
+      player = Player(
+        id: playerId,
+        inventory: {
+          'food_basic': 2,
+          'soap_basic': 1,
+        },
+      );
       await repository.savePlayer(player!);
     }
     notifyListeners();
@@ -296,17 +302,17 @@ class GameState extends ChangeNotifier {
     if (pet.currentAction == PetAction.idle || pet.currentAction == PetAction.walking) {
       return true;
     }
-    debugPrint('_canAct(${pet.name}) = false\nreason: busy with action\nstate: ${pet.currentAction.name}\n');
     return false;
   }
 
   void _requestAction(Pet pet, PetAction intent) {
-    if (_canAct(pet)) {
-      pet.currentAction = intent;
-      pet.currentActionId = const Uuid().v4();
-      debugPrint('[${pet.name}] Action request: ${intent.name}, Action #${pet.currentActionId}');
-      notifyListeners();
+    if (!_canAct(pet)) {
+      cancelCurrentAction(pet);
     }
+    pet.currentAction = intent;
+    pet.currentActionId = const Uuid().v4();
+    debugPrint('[${pet.name}] Action request: ${intent.name}, Action #${pet.currentActionId}');
+    notifyListeners();
   }
 
   Future<void> feedPet({CareMinigameResult? result}) async {

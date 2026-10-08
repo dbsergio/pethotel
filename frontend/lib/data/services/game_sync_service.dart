@@ -30,6 +30,10 @@ class GameSyncService extends ChangeNotifier {
   }
 
   void markPending() {
+    if (_status == SyncStatus.conflict) {
+      // Do not overwrite conflict status or schedule a sync that will inevitably fail.
+      return;
+    }
     _setStatus(SyncStatus.pending);
     _scheduleSync();
   }

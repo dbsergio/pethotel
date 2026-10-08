@@ -17,13 +17,14 @@ class _BathMinigameState extends State<BathMinigame> {
   
   // Track last touch position to calculate distance swiped
   Offset? _lastTouch;
+  bool _isFinished = false;
 
   void _onPanStart(DragStartDetails details) {
     _lastTouch = details.localPosition;
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (_lastTouch != null) {
+    if (_lastTouch != null && !_isFinished) {
       final distance = (details.localPosition - _lastTouch!).distance;
       setState(() {
         _cleanliness += distance * 0.2; // Adjust multiplier for difficulty
@@ -34,6 +35,7 @@ class _BathMinigameState extends State<BathMinigame> {
       _lastTouch = details.localPosition;
       
       if (_cleanliness >= _maxCleanliness) {
+        _isFinished = true;
         _finishGame();
       }
     }

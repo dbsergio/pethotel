@@ -61,6 +61,10 @@ class LocalGameRepository implements GameRepository {
     if (player == null) return;
     
     try {
+      print('--- SYNC DEBUG START ---');
+      print('playerId: $playerId');
+      print('client player.revision: ${player.revision}');
+      
       final token = prefs.getString('jwt_token');
       final headers = {'Content-Type': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -70,6 +74,8 @@ class LocalGameRepository implements GameRepository {
         headers: headers,
         body: jsonEncode(player.toJson()),
       );
+      
+      print('Response statusCode: ${response.statusCode}');
       
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -93,9 +99,11 @@ class LocalGameRepository implements GameRepository {
           await prefs.setString('conflict_data', response.body);
         }
       } else if (response.statusCode == 409) {
+        print('CONFLICT DETECTED! Body: ${response.body}');
         await prefs.setBool('sync_conflict', true);
         await prefs.setString('conflict_data', response.body);
       }
+      print('--- SYNC DEBUG END ---');
     } catch (e) {
       // Ignorar error de red, se reintentará luego
     }

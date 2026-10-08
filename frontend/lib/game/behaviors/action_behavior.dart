@@ -142,6 +142,8 @@ class ActionBehavior extends Component with ParentIsA<PetGraphicComponent>, HasG
   void _resetAction() {
     _isActing = false;
     _actionTimer = 0;
+    parent.movement.cancel();
+    removeWhere((component) => component is TimerComponent);
     parent.wander.resume();
   }
 }

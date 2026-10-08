@@ -82,5 +82,24 @@ void main() {
       expect(gameState.getInventoryQuantity('soap_basic'), 0);
       expect(gameState.player!.inventory.containsKey('soap_basic'), isFalse, reason: 'Key should be removed when quantity is 0');
     });
+
+    test('loadPlayer gives initial inventory to new players only', () async {
+      final repo = MockGameRepository();
+      final gs = GameState(repo, MockGameSyncService());
+      
+      // New player
+      await gs.loadPlayer('new_player_id');
+      expect(gs.player!.inventory['food_basic'], 2);
+      expect(gs.player!.inventory['soap_basic'], 1);
+
+      // Modify inventory and save
+      gs.player!.inventory['food_basic'] = 10;
+      await repo.savePlayer(gs.player!);
+
+      // Reload
+      await gs.loadPlayer('new_player_id');
+      expect(gs.player!.inventory['food_basic'], 10); // Should not be reset to 2
+      expect(gs.player!.inventory['soap_basic'], 1);
+    });
   });
 }

@@ -26,18 +26,27 @@ public class GameSaveService {
             throw new IllegalArgumentException("Save debe tener un ID (playerId)");
         }
         
+        System.out.println("--- BACKEND SYNC DEBUG ---");
+        System.out.println("incomingSave playerId: " + incomingSave.getId());
+        System.out.println("incomingSave revision: " + incomingSave.getRevision());
+
         Optional<GameSave> optionalCurrent = gameSaveRepository.findById(incomingSave.getId());
-        
         if (optionalCurrent.isPresent()) {
             GameSave currentSave = optionalCurrent.get();
             // Optimistic Concurrency Check as requested:
             // Client sends expectedRevision. Server checks if it exactly matches current DB revision.
             if (incomingSave.getRevision() != currentSave.getRevision()) {
+                System.out.println("CLIENT_REVISION=" + incomingSave.getRevision());
+                System.out.println("DB_REVISION=" + currentSave.getRevision());
+                System.out.println("RESULT=409");
                 // Conflict
                 return new SyncResponse("CONFLICT", currentSave);
             }
+        } else {
+            System.out.println("No existing save found in DB for " + incomingSave.getId());
         }
         
+        System.out.println("Incrementing revision...");
         // Increment the revision since it matched (or it's the first save)
         incomingSave.setRevision(incomingSave.getRevision() + 1);
         

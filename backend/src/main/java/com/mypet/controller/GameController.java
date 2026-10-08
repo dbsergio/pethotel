@@ -27,7 +27,11 @@ public class GameController {
         
         GameSave save = gameSaveService.getSave(playerId);
         if (save != null) {
-            return ResponseEntity.ok(save);
+            return ResponseEntity.ok()
+                    .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    .header("Pragma", "no-cache")
+                    .header("Expires", "0")
+                    .body(save);
         } else {
             return ResponseEntity.notFound().build();
         }

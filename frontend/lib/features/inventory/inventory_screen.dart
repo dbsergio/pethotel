@@ -98,14 +98,29 @@ class InventoryScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () {
-                          // Placeholder for Phase 3.4
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('El uso de objetos se implementará en el próximo paso.'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                        onPressed: () async {
+                          final pet = gameState.selectedPet;
+                          if (pet == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Selecciona una mascota en la guardería primero.'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          // Consumir
+                          final success = await gameState.consumeItem(shopItem.id, pet.id);
+                          if (success && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('¡${shopItem.name} usado en ${pet.name}!'),
+                                duration: const Duration(seconds: 1),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
