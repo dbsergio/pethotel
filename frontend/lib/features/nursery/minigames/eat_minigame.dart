@@ -1,6 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../game/models/pet.dart';
 import '../../../game/minigames/minigame_result.dart';
+import '../../../data/local/game_state.dart';
 
 class EatMinigame extends StatefulWidget {
   final Pet pet;
@@ -13,29 +16,37 @@ class EatMinigame extends StatefulWidget {
 
 class _EatMinigameState extends State<EatMinigame> {
   int _portionsInBowl = 0;
-  final int _maxPortions = 3;
+  int _maxPortions = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Leer inventario inicial. Usamos read porque estamos en initState.
+    final gs = context.read<GameState>();
+    _maxPortions = gs.getInventoryQuantity('food_basic');
+  }
 
   void _onFoodDropped() {
-    setState(() {
-      _portionsInBowl++;
-    });
-
-    if (_portionsInBowl >= _maxPortions) {
-      _finishGame();
+    if (_portionsInBowl < _maxPortions) {
+      setState(() {
+        _portionsInBowl++;
+      });
     }
   }
 
   void _finishGame() {
-    // 3 portions: +25 hunger, +5 happiness
-    final double hunger = _portionsInBowl >= 3 ? 25.0 : (_portionsInBowl * 8.0);
-    final double happiness = _portionsInBowl >= 3 ? 5.0 : 0.0;
+    final double hunger = _portionsInBowl * 12.0;
+    final double happiness = _portionsInBowl * 2.0;
 
     final result = CareMinigameResult(
       success: _portionsInBowl > 0,
-      quality: _portionsInBowl / _maxPortions,
+      quality: _maxPortions > 0 ? _portionsInBowl / _maxPortions : 0,
       statChanges: {
         'hunger': hunger,
         'happiness': happiness,
+      },
+      consumedItems: {
+        'food_basic': _portionsInBowl,
       },
     );
 
@@ -49,6 +60,43 @@ class _EatMinigameState extends State<EatMinigame> {
 
   @override
   Widget build(BuildContext context) {
+    if (_maxPortions == 0) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: 350,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.orange[50],
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.orange, width: 4),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('😢', style: TextStyle(fontSize: 60)),
+              const SizedBox(height: 16),
+              const Text(
+                'No tienes comida',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Visita la tienda para comprar más comida para tu mascota.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(CareMinigameResult.cancelled()),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -132,10 +180,23 @@ class _EatMinigameState extends State<EatMinigame> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(
                 'Arrastra la comida al comedero (${_portionsInBowl}/$_maxPortions)',
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.brown),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: ElevatedButton(
+                onPressed: _portionsInBowl > 0 ? _finishGame : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey,
+                  minimumSize: const Size(200, 40),
+                ),
+                child: const Text('¡Listo! Alimentar'),
               ),
             ),
           ],

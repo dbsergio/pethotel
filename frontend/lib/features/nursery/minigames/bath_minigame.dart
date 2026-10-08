@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../game/models/pet.dart';
 import '../../../game/minigames/minigame_result.dart';
+import '../../../data/local/game_state.dart';
 
 class BathMinigame extends StatefulWidget {
   final Pet pet;
@@ -14,16 +16,26 @@ class BathMinigame extends StatefulWidget {
 class _BathMinigameState extends State<BathMinigame> {
   double _cleanliness = 0.0;
   final double _maxCleanliness = 100.0;
+  int _availableSoap = 0;
   
   // Track last touch position to calculate distance swiped
   Offset? _lastTouch;
   bool _isFinished = false;
 
+  @override
+  void initState() {
+    super.initState();
+    final gs = context.read<GameState>();
+    _availableSoap = gs.getInventoryQuantity('soap_basic');
+  }
+
   void _onPanStart(DragStartDetails details) {
+    if (_availableSoap == 0) return;
     _lastTouch = details.localPosition;
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
+    if (_availableSoap == 0) return;
     if (_lastTouch != null && !_isFinished) {
       final distance = (details.localPosition - _lastTouch!).distance;
       setState(() {
@@ -53,6 +65,9 @@ class _BathMinigameState extends State<BathMinigame> {
         'hygiene': 30.0,
         'happiness': 5.0,
       },
+      consumedItems: {
+        'soap_basic': 1,
+      }
     );
 
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -64,6 +79,43 @@ class _BathMinigameState extends State<BathMinigame> {
 
   @override
   Widget build(BuildContext context) {
+    if (_availableSoap == 0) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: 350,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.lightBlue[50],
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.blue, width: 4),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('😢', style: TextStyle(fontSize: 60)),
+              const SizedBox(height: 16),
+              const Text(
+                'No tienes jabón',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Visita la tienda para comprar más jabón para tu mascota.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(CareMinigameResult.cancelled()),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     // Dirt opacity decreases as cleanliness increases
     final dirtOpacity = (1.0 - (_cleanliness / _maxCleanliness)).clamp(0.0, 1.0);
     

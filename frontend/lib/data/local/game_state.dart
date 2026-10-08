@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pet.dart';
@@ -9,6 +10,7 @@ import '../../game/models/shop_item.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/config/app_config.dart';
 import '../../game/minigames/minigame_result.dart';
+import 'local_storage.dart';
 class GameState extends ChangeNotifier {
   Player? player;
   final GameRepository repository;
@@ -20,7 +22,32 @@ class GameState extends ChangeNotifier {
   void requestNotify() => notifyListeners();
 
   Future<void> loadPlayer(String playerId) async {
+    // 1. Carga local
     player = await repository.loadPlayer(playerId);
+    final initialJson = player != null ? jsonEncode(player!.toJson()) : null;
+
+    // 2. Carga remota si estamos logueados
+    final token = LocalStorage.prefs.getString('jwt_token');
+    if (token != null) {
+      final remotePlayer = await syncService.remoteRepo.loadRemotePlayer(playerId);
+      if (remotePlayer != null) {
+        final currentJson = player != null ? jsonEncode(player!.toJson()) : null;
+        final changedDuringFetch = initialJson != currentJson;
+        
+        // Solo sobrescribimos si el remoto es mayor Y el local no ha cambiado mientras descargábamos
+        if (player == null || (remotePlayer.revision > player!.revision && !changedDuringFetch)) {
+          player = remotePlayer;
+          // Guardar en local storage para futuras cargas rápidas
+          await repository.savePlayer(player!);
+          // Como acaba de venir del servidor, no necesita sincronizarse
+          await LocalStorage.prefs.setBool('sync_pending', false);
+        } else if (remotePlayer.revision < player!.revision || changedDuringFetch) {
+          // El local es más reciente (o ha avanzado durante la descarga) -> forzar sync
+          syncService.markPending();
+        }
+      }
+    }
+
     if (player == null) {
       player = Player(
         id: playerId,
@@ -328,6 +355,14 @@ class GameState extends ChangeNotifier {
     pet.stats.clamp();
     pet.currentActionMessage = '+${(res?.statChanges['hunger'] ?? 20).toInt()} Hambre';
     pet.currentAction = PetAction.eating;
+    
+    // Deduct consumed items
+    if (res != null && res.consumedItems.isNotEmpty) {
+      for (final entry in res.consumedItems.entries) {
+        await removeInventoryItem(entry.key, entry.value);
+      }
+    }
+    
     pet.minigameResult = null;
     await save();
     notifyListeners();
@@ -376,6 +411,14 @@ class GameState extends ChangeNotifier {
     pet.stats.clamp();
     pet.currentActionMessage = '+${(res?.statChanges['hygiene'] ?? 30).toInt()} Limpieza';
     pet.currentAction = PetAction.bathing;
+    
+    // Deduct consumed items
+    if (res != null && res.consumedItems.isNotEmpty) {
+      for (final entry in res.consumedItems.entries) {
+        await removeInventoryItem(entry.key, entry.value);
+      }
+    }
+    
     pet.minigameResult = null;
     await save();
     notifyListeners();

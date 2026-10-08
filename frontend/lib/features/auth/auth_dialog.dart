@@ -46,14 +46,9 @@ class _AuthDialogState extends State<AuthDialog> {
     final success = await _authRepo.login(_emailCtrl.text, _passCtrl.text);
     if (success) {
       final newPlayerId = LocalStorage.getPlayerId();
-      final remotePlayer = await _remoteRepo.loadRemotePlayer(newPlayerId);
       
-      if (remotePlayer != null) {
-        // Overwrite local prefs
-        await LocalStorage.prefs.setString('player_data_$newPlayerId', jsonEncode(remotePlayer.toJson()));
-      }
-      
-      // Reload game state with the new (or downloaded) player
+      // Reload game state with the new (or downloaded) player.
+      // GameState.loadPlayer will now handle fetching the remote save and merging.
       final gs = context.read<GameState>();
       await gs.loadPlayer(newPlayerId);
       
