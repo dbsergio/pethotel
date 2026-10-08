@@ -42,6 +42,7 @@ class GameState extends ChangeNotifier {
           if (player!.inventory.isEmpty) {
             player!.inventory['food_basic'] = 2;
             player!.inventory['soap_basic'] = 1;
+            player!.inventory['water_basic'] = 2;
             addedInitialItems = true;
           }
           
@@ -69,6 +70,7 @@ class GameState extends ChangeNotifier {
         inventory: {
           'food_basic': 2,
           'soap_basic': 1,
+          'water_basic': 2,
         },
       );
       await repository.savePlayer(player!);
@@ -76,6 +78,7 @@ class GameState extends ChangeNotifier {
       // Caso fallback si se carga puramente de local storage y vino vacío (poco probable)
       player!.inventory['food_basic'] = 2;
       player!.inventory['soap_basic'] = 1;
+      player!.inventory['water_basic'] = 2;
       await repository.savePlayer(player!);
     }
     notifyListeners();
@@ -396,15 +399,42 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> drinkPet() async {
-    if (selectedPet != null) _requestAction(selectedPet!, PetAction.going_to_drink);
+  Future<void> drinkPet({CareMinigameResult? result}) async {
+    if (selectedPet != null) {
+      selectedPet!.minigameResult = result;
+      _requestAction(selectedPet!, PetAction.going_to_drink);
+    }
   }
+
   Future<void> completeDrinkPet(Pet pet) async {
-    pet.stats.thirst += 30;
-    pet.stats.happiness += 2;
+    final res = pet.minigameResult;
+    int consumed = 0;
+    
+    if (res != null) {
+      pet.stats.thirst += res.statChanges['thirst'] ?? 30;
+      pet.stats.happiness += res.statChanges['happiness'] ?? 2;
+    } else {
+      pet.stats.thirst += 30;
+      pet.stats.happiness += 2;
+    }
+    
+    if (res != null && res.consumedItems.containsKey('water_basic')) {
+      consumed = res.consumedItems['water_basic'] as int;
+    }
+
     pet.stats.clamp();
-    pet.currentActionMessage = '+30 Sed';
+    
+    pet.currentActionMessage = '+${(res?.statChanges['thirst'] ?? 30).toInt()} Sed' +
+      (consumed > 0 ? '\n- $consumed Agua' : '');
     pet.currentAction = PetAction.drinking;
+    
+    if (res != null && res.consumedItems.isNotEmpty) {
+      for (final entry in res.consumedItems.entries) {
+        await removeInventoryItem(entry.key, entry.value);
+      }
+    }
+    
+    pet.minigameResult = null;
     await save();
     notifyListeners();
   }

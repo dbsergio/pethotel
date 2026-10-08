@@ -25,7 +25,7 @@ class PlayMinigameToy extends PositionComponent with DragCallbacks, HasGameRefer
     required this.gameState,
     required this.onComplete,
     required Vector2 position,
-  }) : super(position: position, size: Vector2(40, 40));
+  }) : super(position: position, size: Vector2(80, 80));
 
   @override
   Future<void> onLoad() async {

@@ -29,6 +29,14 @@ class StoreCatalog {
       effectValue: 100, // Recupera el hambre a 100
       effectType: EffectType.hunger,
     ),
+    'water_basic': ShopItem(
+      id: 'water_basic',
+      name: 'Agua Fresca',
+      type: ItemType.consumable,
+      price: 5,
+      effectValue: 100,
+      effectType: EffectType.thirst,
+    ),
     'soap_basic': ShopItem(
       id: 'soap_basic',
       name: 'Jabón Rápido',

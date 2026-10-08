@@ -16,6 +16,7 @@ import '../auth/auth_dialog.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'minigames/eat_minigame.dart';
+import 'minigames/drink_minigame.dart';
 import 'minigames/bath_minigame.dart';
 import 'minigames/petting_minigame.dart';
 import '../../game/minigames/minigame_result.dart';
@@ -497,7 +498,7 @@ class _ActionBar extends StatelessWidget {
         child: Row(
           children: [
             _actionBtn('🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
-            _actionBtn('💧', 'Beber',  () => gameState.drinkPet()),
+            _actionBtn('💧', 'Beber',  () => _startDrinkMinigame(context, gameState, pet)),
             _actionBtn('🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
             _actionBtn('🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
             _actionBtn('❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
@@ -563,7 +564,7 @@ class _ActionGrid extends StatelessWidget {
         alignment: WrapAlignment.center,
         children: [
           _actionBtn('🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
-          _actionBtn('💧', 'Beber',  () => gameState.drinkPet()),
+          _actionBtn('💧', 'Beber',  () => _startDrinkMinigame(context, gameState, pet)),
           _actionBtn('🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
           _actionBtn('🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
           _actionBtn('❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
@@ -803,6 +804,17 @@ void _startFeedMinigame(BuildContext context, GameState gs, Pet pet) {
   ).then((result) {
     if (result != null && !result.cancelled) {
        gs.feedPet(result: result);
+    }
+  });
+}
+
+void _startDrinkMinigame(BuildContext context, GameState gs, Pet pet) {
+  showDialog<CareMinigameResult>(
+    context: context,
+    builder: (ctx) => DrinkMinigame(pet: pet),
+  ).then((result) {
+    if (result != null && !result.cancelled) {
+       gs.drinkPet(result: result);
     }
   });
 }
