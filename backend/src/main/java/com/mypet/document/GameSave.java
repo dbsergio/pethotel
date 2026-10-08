@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +22,7 @@ public class GameSave {
     private List<Map<String, Object>> activePets = new ArrayList<>();
     private List<Map<String, Object>> activeStays = new ArrayList<>();
     private List<Map<String, Object>> completedStays = new ArrayList<>();
+    private Map<String, Integer> inventory = new HashMap<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -48,4 +50,6 @@ public class GameSave {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Map<String, Integer> getInventory() { return inventory; }
+    public void setInventory(Map<String, Integer> inventory) { this.inventory = inventory; }
 }

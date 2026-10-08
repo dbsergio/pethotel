@@ -19,6 +19,7 @@ import 'minigames/eat_minigame.dart';
 import 'minigames/bath_minigame.dart';
 import 'minigames/petting_minigame.dart';
 import '../../game/minigames/minigame_result.dart';
+import '../economy/widgets/coin_counter_widget.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Breakpoints
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ class _TopBar extends StatelessWidget {
                     children: [
                       _SyncIndicator(syncService: gs.syncService),
                       const SizedBox(width: 8),
-                      _CoinsChip(coins: gs.player?.coins ?? 0),
+                      const CoinCounterWidget(),
                     ],
                   );
                 },
@@ -215,29 +216,6 @@ class _SyncIndicator extends StatelessWidget {
           child: Icon(icon, color: color, size: 20),
         );
       },
-    );
-  }
-}
-
-class _CoinsChip extends StatelessWidget {
-  final int coins;
-  const _CoinsChip({required this.coins});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.yellow[100],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange, width: 2),
-      ),
-      child: Row(children: [
-        const Text('💰', style: TextStyle(fontSize: 16)),
-        const SizedBox(width: 4),
-        Text('$coins',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.brown)),
-      ]),
     );
   }
 }

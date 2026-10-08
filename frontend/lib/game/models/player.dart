@@ -11,6 +11,7 @@ class Player {
   List<Pet> activePets;
   List<BoardingStay> activeStays;
   List<BoardingStay> completedStays;
+  Map<String, int> inventory;
 
   Player({
     required this.id,
@@ -22,9 +23,11 @@ class Player {
     List<Pet>? activePets,
     List<BoardingStay>? activeStays,
     List<BoardingStay>? completedStays,
+    Map<String, int>? inventory,
   })  : activePets = activePets ?? [],
         activeStays = activeStays ?? [],
-        completedStays = completedStays ?? [];
+        completedStays = completedStays ?? [],
+        inventory = inventory ?? {};
 
   factory Player.fromJson(Map<String, dynamic> json) {
     var list = json['activePets'] as List? ?? [];
@@ -40,6 +43,9 @@ class Player {
     var completedStaysList = (json['completedStays'] as List? ?? [])
         .map((i) => BoardingStay.fromJson(i as Map<String, dynamic>))
         .toList();
+    
+    var inventoryMap = (json['inventory'] as Map<String, dynamic>? ?? {})
+        .map((k, v) => MapEntry(k, v as int));
 
     return Player(
       id: json['id'] as String,
@@ -51,6 +57,7 @@ class Player {
       activePets: petsList,
       activeStays: activeStaysList,
       completedStays: completedStaysList,
+      inventory: inventoryMap,
     );
   }
 
@@ -65,6 +72,7 @@ class Player {
       'activePets': activePets.map((p) => p.toJson()).toList(),
       'activeStays': activeStays.map((s) => s.toJson()).toList(),
       'completedStays': completedStays.map((s) => s.toJson()).toList(),
+      'inventory': inventory,
     };
   }
 }

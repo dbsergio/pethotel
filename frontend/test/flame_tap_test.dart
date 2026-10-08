@@ -77,5 +77,8 @@ void main() {
 
     // Check if Luna is selected
     expect(gameState.selectedPetId, luna.id);
+
+    // Wait to clear gesture timers
+    await tester.pump(const Duration(milliseconds: 500));
   });
 }

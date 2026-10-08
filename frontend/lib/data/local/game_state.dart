@@ -5,6 +5,7 @@ import '../../game/models/boarding_stay.dart';
 import '../../game/models/customer.dart';
 import '../repositories/game_repository.dart';
 import '../services/game_sync_service.dart';
+import '../../game/models/shop_item.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/config/app_config.dart';
 import '../../game/minigames/minigame_result.dart';
@@ -26,6 +27,139 @@ class GameState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // --- ECONOMY & INVENTORY METHODS ---
+  bool hasCoins(int amount) {
+    if (player == null || amount < 0) return false;
+    return player!.coins >= amount;
+  }
+
+  Future<void> addCoins(int amount) async {
+    if (player == null || amount < 0) return;
+    player!.coins += amount;
+    await save();
+    notifyListeners();
+  }
+
+  Future<bool> deductCoins(int amount) async {
+    if (!hasCoins(amount)) return false;
+    player!.coins -= amount;
+    await save();
+    notifyListeners();
+    return true;
+  }
+
+  int getInventoryQuantity(String itemId) {
+    if (player == null) return 0;
+    return player!.inventory[itemId] ?? 0;
+  }
+
+  bool hasInventoryItem(String itemId, int quantity) {
+    if (player == null || quantity <= 0) return false;
+    return getInventoryQuantity(itemId) >= quantity;
+  }
+
+  Future<void> addInventoryItem(String itemId, int quantity) async {
+    if (player == null || quantity <= 0) return;
+    int current = player!.inventory[itemId] ?? 0;
+    player!.inventory[itemId] = current + quantity;
+    await save();
+    notifyListeners();
+  }
+
+  Future<bool> removeInventoryItem(String itemId, int quantity) async {
+    if (!hasInventoryItem(itemId, quantity)) return false;
+    int current = player!.inventory[itemId] ?? 0;
+    int newQuantity = current - quantity;
+    if (newQuantity == 0) {
+      player!.inventory.remove(itemId);
+    } else {
+      player!.inventory[itemId] = newQuantity;
+    }
+    await save();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> buyItem(String itemId) async {
+    final item = StoreCatalog.items[itemId];
+    if (item == null) return false;
+    
+    if (!hasCoins(item.price)) return false;
+
+    if (item.type == ItemType.permanent) {
+      if (hasInventoryItem(itemId, 1)) return false; // Already bought
+      
+      // Apply permanent effect
+      if (itemId == 'upgrade_capacity_1' && player!.capacity < 5) {
+        player!.capacity = 5;
+      } else if (itemId == 'upgrade_capacity_2' && player!.capacity < 6) {
+        player!.capacity = 6;
+      } else {
+        return false; // Cannot upgrade if already maxed out or not matching conditions
+      }
+    }
+
+    // Deduct coins
+    player!.coins -= item.price;
+    
+    // Add to inventory
+    int current = player!.inventory[itemId] ?? 0;
+    player!.inventory[itemId] = current + 1;
+    
+    await save();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> consumeItem(String itemId, String petId) async {
+    final item = StoreCatalog.items[itemId];
+    if (item == null || item.type != ItemType.consumable) return false;
+    if (!hasInventoryItem(itemId, 1)) return false;
+
+    final pet = player!.activePets.cast<Pet?>().firstWhere(
+      (p) => p?.id == petId,
+      orElse: () => null,
+    );
+    if (pet == null) return false;
+
+    // Remove from inventory
+    int current = player!.inventory[itemId] ?? 0;
+    int newQuantity = current - 1;
+    if (newQuantity <= 0) {
+      player!.inventory.remove(itemId);
+    } else {
+      player!.inventory[itemId] = newQuantity;
+    }
+
+    // Apply effect
+    switch (item.effectType) {
+      case EffectType.hunger:
+        pet.stats.hunger += item.effectValue;
+        break;
+      case EffectType.hygiene:
+        pet.stats.hygiene += item.effectValue;
+        break;
+      case EffectType.happiness:
+        pet.stats.happiness += item.effectValue;
+        break;
+      case EffectType.energy:
+        pet.stats.energy += item.effectValue;
+        break;
+      case EffectType.thirst:
+        pet.stats.thirst += item.effectValue;
+        break;
+      case EffectType.none:
+        break;
+    }
+    pet.stats.clamp(); // Ensure values do not exceed 100
+
+    await save();
+    notifyListeners();
+    return true;
+  }
+  // -----------------------------------
+
 
   Future<void> save() async {
     if (player != null) {
