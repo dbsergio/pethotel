@@ -10,6 +10,8 @@ import '../../game/models/pet_stats.dart';
 import '../../game/models/customer.dart' as import_customer;
 import '../../game/models/boarding_stay.dart';
 import 'pet_info_panel.dart';
+import 'tutorial_overlay.dart';
+import 'priority_panel.dart';
 import '../../data/local/local_storage.dart' as import_local_storage;
 import '../../data/services/game_sync_service.dart' as import_game_sync;
 import '../auth/auth_dialog.dart';
@@ -70,6 +72,12 @@ class _NurseryScreenState extends State<NurseryScreen> {
                 top: 0, left: 0, right: 0,
                 child: _TopBar(game: _game, isDesktop: isDesktop),
               ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: PriorityPanel(isDesktop: isDesktop),
+              ),
+              const TutorialOverlay(),
             ],
           ),
         ),

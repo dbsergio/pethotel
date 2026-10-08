@@ -75,15 +75,25 @@ class PlayMinigameToy extends PositionComponent with DragCallbacks, HasGameRefer
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
     _isBeingDragged = true;
+    event.continuePropagation = false;
   }
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
     position += event.localDelta;
+
+    // Clamp to playable area to respect boundaries
+    final playable = game.playableRect;
+    if (position.x < playable.left) position.x = playable.left;
+    if (position.x > playable.right) position.x = playable.right;
+    if (position.y < playable.top) position.y = playable.top;
+    if (position.y > playable.bottom) position.y = playable.bottom;
+
     // Tell pet to update its destination dynamically
     if (_waitingForPet) {
       _directPetTo(position);
     }
+    event.continuePropagation = false;
   }
 
   @override
@@ -92,6 +102,7 @@ class PlayMinigameToy extends PositionComponent with DragCallbacks, HasGameRefer
     _isBeingDragged = false;
     // Restart chase logic once dropped
     _startChase();
+    event.continuePropagation = false;
   }
 
   void _finishGame() {
