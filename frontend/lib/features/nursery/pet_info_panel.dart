@@ -200,7 +200,9 @@ class PetInfoPanel extends StatelessWidget {
             Text('💬 ${stay!.request}',
                 style: TextStyle(fontSize: 12, color: Colors.brown[300], fontStyle: FontStyle.italic)),
             
-            if (stay!.status == StayStatus.readyForPickup && onDeliver != null) ...[
+            if (stay!.status == StayStatus.pickingUp && onDeliver != null) ...[
+              const SizedBox(height: 10),
+              const Text('✅ El dueño ha llegado', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
@@ -214,6 +216,10 @@ class PetInfoPanel extends StatelessWidget {
                   ),
                 ),
               ),
+            ] else if (stay!.status == StayStatus.readyForPickup) ...[
+              const SizedBox(height: 10),
+              const Text('📦 Lista para entregar', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+              Text('El dueño de ${pet.name} viene de camino...', style: TextStyle(fontSize: 11, color: Colors.brown[400], fontStyle: FontStyle.italic)),
             ] else if (stay!.status == StayStatus.active) ...[
               const SizedBox(height: 10),
               const Text('⏱️ Estancia en curso', style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold)),

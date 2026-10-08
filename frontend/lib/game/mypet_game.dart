@@ -10,6 +10,8 @@ import 'package:flame/events.dart';
 import 'models/pet.dart';
 import 'models/boarding_stay.dart';
 import 'models/customer.dart' as import_customer;
+import '../core/config/app_config.dart';
+import 'minigames/play_minigame_toy.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Playable area (pixels, relative to canvas)
@@ -90,22 +92,29 @@ class MyPetGame extends FlameGame with TapCallbacks {
         if (stay.status == StayStatus.readyForPickup && !_spawnedRetrievers.contains(stay.id)) {
           _spawnedRetrievers.add(stay.id);
           
-          final startPos = scenePoint(0.85, 0.30); // Door
-          final cust = CustomerGraphicComponent(
-            customerName: stay.customer.name,
-            position: startPos,
-          );
-          cust.priority = 15;
-          add(cust);
-          
-          // Spread them out slightly around reception
-          final offsetIndex = _retrievingCustomers.length;
-          final receptionPos = scenePoint(0.4 + (offsetIndex * 0.1), 0.5);
-          
-          cust.walkTo(receptionPos, onComplete: () {
-            // Arrived at reception
+          Future.delayed(Duration(seconds: AppConfig.pickupDelaySeconds), () {
+            // Re-check if it's still ready in case of weird state changes
+            if (stay.status != StayStatus.readyForPickup) return;
+            
+            final startPos = scenePoint(0.85, 0.30); // Door
+            final cust = CustomerGraphicComponent(
+              customerName: stay.customer.name,
+              position: startPos,
+            );
+            cust.priority = 15;
+            add(cust);
+            
+            // Spread them out slightly around reception
+            final offsetIndex = _retrievingCustomers.length;
+            final receptionPos = scenePoint(0.4 + (offsetIndex * 0.1), 0.5);
+            
+            cust.walkTo(receptionPos, onComplete: () {
+              // Arrived at reception
+              stay.status = StayStatus.pickingUp;
+              gameState.requestNotify(); // Tell UI to show 'ENTREGAR'
+            });
+            _retrievingCustomers[stay.id] = cust;
           });
-          _retrievingCustomers[stay.id] = cust;
         }
       }
     }
@@ -215,6 +224,25 @@ class MyPetGame extends FlameGame with TapCallbacks {
       _incomingPet = null;
     }
     onFinish(); // This will trigger gameState.adoptPet
+  }
+
+  void startPlayMinigame(Pet pet) {
+    // Stop any existing action gracefully
+    if (pet.currentAction != PetAction.idle) {
+       gameState.resetActionState(pet);
+    }
+    
+    gameState.playWithPet(); // Sets going_to_play
+
+    // Spawn toy at random reachable location
+    final toy = PlayMinigameToy(
+      pet: pet,
+      gameState: gameState,
+      position: scenePoint(0.5, 0.5),
+      onComplete: () {}, // Handled internally
+    );
+    toy.priority = 20; // Above everything
+    add(toy);
   }
 
   /// Convert normalised (0-1) to canvas pixels

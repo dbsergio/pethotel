@@ -57,9 +57,8 @@ class ActionBehavior extends Component with ParentIsA<PetGraphicComponent>, HasG
         duration = 5.0;
         break;
       case PetAction.going_to_play:
-        dest = game.scenePoint(MyPetGame.kToy.dx, MyPetGame.kToy.dy);
-        duration = 4.0;
-        break;
+        // Handled dynamically by PlayMinigameToy
+        return;
       case PetAction.going_to_bath:
         dest = game.scenePoint(MyPetGame.kBath.dx, MyPetGame.kBath.dy);
         duration = 3.5;
@@ -119,7 +118,8 @@ class ActionBehavior extends Component with ParentIsA<PetGraphicComponent>, HasG
     switch (action) {
       case PetAction.going_to_eat: parent.gameState.completeFeedPet(parent.pet); break;
       case PetAction.going_to_drink: parent.gameState.completeDrinkPet(parent.pet); break;
-      case PetAction.going_to_play: parent.gameState.completePlayWithPet(parent.pet); break;
+      // going_to_play is handled by Toy component now
+      // case PetAction.going_to_play: parent.gameState.completePlayWithPet(parent.pet); break;
       case PetAction.going_to_sleep: parent.gameState.completeSleepPet(parent.pet); break;
       case PetAction.going_to_bath: parent.gameState.completeBathePet(parent.pet); break;
       case PetAction.going_to_walk: parent.gameState.completeWalkPet(parent.pet); break;

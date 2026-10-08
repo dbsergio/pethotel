@@ -1,5 +1,6 @@
 import 'pet_stats.dart';
 import 'package:uuid/uuid.dart';
+import '../minigames/minigame_result.dart';
 
 enum PetAction { 
   idle, walking, eating, drinking, playing, bathing, sleeping, petting, happy, walking_in, walking_out,
@@ -19,6 +20,9 @@ class Pet {
   PetAction currentAction = PetAction.idle;
   String? currentActionMessage;
   String? currentActionId;
+  
+  // Transient property for minigame result
+  CareMinigameResult? minigameResult;
 
   Pet({
     String? id,

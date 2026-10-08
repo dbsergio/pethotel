@@ -6,7 +6,8 @@ import '../../game/models/customer.dart';
 import '../repositories/game_repository.dart';
 import '../services/game_sync_service.dart';
 import 'package:flutter/foundation.dart';
-
+import '../../core/config/app_config.dart';
+import '../../game/minigames/minigame_result.dart';
 class GameState extends ChangeNotifier {
   Player? player;
   final GameRepository repository;
@@ -68,7 +69,7 @@ class GameState extends ChangeNotifier {
         customer: c,
         petId: pet.id,
         request: req,
-        expectedDurationSeconds: 120, // 2 minutes for testing
+        expectedDurationSeconds: AppConfig.boardingStayDurationSeconds,
       );
       
       player!.activePets.add(pet);
@@ -174,15 +175,20 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  Future<void> feedPet() async {
-    if (selectedPet != null) _requestAction(selectedPet!, PetAction.going_to_eat);
+  Future<void> feedPet({CareMinigameResult? result}) async {
+    if (selectedPet != null) {
+      selectedPet!.minigameResult = result;
+      _requestAction(selectedPet!, PetAction.going_to_eat);
+    }
   }
   Future<void> completeFeedPet(Pet pet) async {
-    pet.stats.hunger += 20;
-    pet.stats.happiness += 3;
+    final res = pet.minigameResult;
+    pet.stats.hunger += res?.statChanges['hunger'] ?? 20;
+    pet.stats.happiness += res?.statChanges['happiness'] ?? 3;
     pet.stats.clamp();
-    pet.currentActionMessage = '+20 Hambre';
-    pet.currentAction = PetAction.eating; // Update to actual eating
+    pet.currentActionMessage = '+${(res?.statChanges['hunger'] ?? 20).toInt()} Hambre';
+    pet.currentAction = PetAction.eating;
+    pet.minigameResult = null;
     await save();
     notifyListeners();
   }
@@ -200,27 +206,37 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> playWithPet() async {
-    if (selectedPet != null) _requestAction(selectedPet!, PetAction.going_to_play);
+  Future<void> playWithPet({CareMinigameResult? result}) async {
+    if (selectedPet != null) {
+      selectedPet!.minigameResult = result;
+      _requestAction(selectedPet!, PetAction.going_to_play);
+    }
   }
   Future<void> completePlayWithPet(Pet pet) async {
-    pet.stats.happiness += 15;
-    pet.stats.energy -= 10;
+    final res = pet.minigameResult;
+    pet.stats.happiness += res?.statChanges['happiness'] ?? 15;
+    pet.stats.energy += res?.statChanges['energy'] ?? -10; // usually negative
     pet.stats.clamp();
-    pet.currentActionMessage = '+15 Feliz';
+    pet.currentActionMessage = '+${(res?.statChanges['happiness'] ?? 15).toInt()} Feliz';
     pet.currentAction = PetAction.playing;
+    pet.minigameResult = null;
     await save();
     notifyListeners();
   }
 
-  Future<void> bathePet() async {
-    if (selectedPet != null) _requestAction(selectedPet!, PetAction.going_to_bath);
+  Future<void> bathePet({CareMinigameResult? result}) async {
+    if (selectedPet != null) {
+      selectedPet!.minigameResult = result;
+      _requestAction(selectedPet!, PetAction.going_to_bath);
+    }
   }
   Future<void> completeBathePet(Pet pet) async {
-    pet.stats.hygiene += 30;
+    final res = pet.minigameResult;
+    pet.stats.hygiene += res?.statChanges['hygiene'] ?? 30;
     pet.stats.clamp();
-    pet.currentActionMessage = '+30 Limpieza';
+    pet.currentActionMessage = '+${(res?.statChanges['hygiene'] ?? 30).toInt()} Limpieza';
     pet.currentAction = PetAction.bathing;
+    pet.minigameResult = null;
     await save();
     notifyListeners();
   }
@@ -237,14 +253,16 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> petPet() async {
+  Future<void> petPet({CareMinigameResult? result}) async {
     final pet = selectedPet;
     if (pet != null && _canAct(pet)) {
       pet.currentAction = PetAction.petting;
       pet.currentActionId = const Uuid().v4();
-      pet.stats.happiness += 10;
+      
+      final res = result;
+      pet.stats.happiness += res?.statChanges['happiness'] ?? 10;
       pet.stats.clamp();
-      pet.currentActionMessage = '+10 Amor';
+      pet.currentActionMessage = '+${(res?.statChanges['happiness'] ?? 10).toInt()} Amor';
       await save();
       notifyListeners();
       

@@ -14,7 +14,11 @@ import '../../data/local/local_storage.dart' as import_local_storage;
 import '../../data/services/game_sync_service.dart' as import_game_sync;
 import '../auth/auth_dialog.dart';
 import '../../data/repositories/auth_repository.dart';
-
+import '../../data/repositories/auth_repository.dart';
+import 'minigames/eat_minigame.dart';
+import 'minigames/bath_minigame.dart';
+import 'minigames/petting_minigame.dart';
+import '../../game/minigames/minigame_result.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Breakpoints
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,13 +275,13 @@ class _DesktopLayout extends StatelessWidget {
                   PetInfoPanel(
                     pet: pet,
                     stay: gs.getStayForPet(pet.id),
-                    onFeed:  () => gs.feedPet(),
-                    onPlay:  () => gs.playWithPet(),
-                    onBathe: () => gs.bathePet(),
+                    onFeed:  () => _startFeedMinigame(context, gs, pet),
+                    onPlay:  () => game.startPlayMinigame(pet),
+                    onBathe: () => _startBathMinigame(context, gs, pet),
                     onDeliver: () => _handleDeliver(context, gs, game, gs.getStayForPet(pet.id)!),
                   ),
                   const SizedBox(height: 8),
-                  _ActionGrid(gameState: gs, pet: pet),
+                  _ActionGrid(gameState: gs, game: game, pet: pet),
                   const SizedBox(height: 12),
                 ],
               ),
@@ -292,9 +296,16 @@ class _DesktopLayout extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobile / tablet layout  (game on top, info + actions below)
 // ─────────────────────────────────────────────────────────────────────────────
-class _MobileLayout extends StatelessWidget {
+class _MobileLayout extends StatefulWidget {
   final MyPetGame game;
   const _MobileLayout({required this.game});
+
+  @override
+  State<_MobileLayout> createState() => _MobileLayoutState();
+}
+
+class _MobileLayoutState extends State<_MobileLayout> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -302,12 +313,12 @@ class _MobileLayout extends StatelessWidget {
       children: [
         // Game area — takes most of the screen
         Expanded(
-          flex: 5,
+          flex: _isExpanded ? 3 : 6,
           child: Stack(
             children: [
-              GameWidget(game: game),
+              GameWidget(game: widget.game),
               Consumer<GameState>(
-                builder: (_, gs, __) => _ReceptionButton(gameState: gs, game: game),
+                builder: (_, gs, __) => _ReceptionButton(gameState: gs, game: widget.game),
               ),
             ],
           ),
@@ -316,7 +327,24 @@ class _MobileLayout extends StatelessWidget {
         Consumer<GameState>(
           builder: (_, gs, __) {
             final pet = gs.selectedPet;
-            return _BottomHud(gameState: gs, game: game, pet: pet);
+            return GestureDetector(
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity! < -300) {
+                  setState(() => _isExpanded = true);
+                } else if (details.primaryVelocity! > 300) {
+                  setState(() => _isExpanded = false);
+                }
+              },
+              onTap: () {
+                if (pet != null) setState(() => _isExpanded = !_isExpanded);
+              },
+              child: _BottomHud(
+                gameState: gs, 
+                game: widget.game, 
+                pet: pet, 
+                isExpanded: _isExpanded,
+              ),
+            );
           },
         ),
       ],
@@ -331,11 +359,14 @@ class _BottomHud extends StatelessWidget {
   final GameState gameState;
   final MyPetGame game;
   final Pet? pet;
-  const _BottomHud({required this.gameState, required this.game, required this.pet});
+  final bool isExpanded;
+  const _BottomHud({required this.gameState, required this.game, required this.pet, required this.isExpanded});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
@@ -355,15 +386,38 @@ class _BottomHud extends StatelessWidget {
             ),
           ),
           if (pet != null) ...[
-            PetInfoPanel(
-              pet: pet!,
-              stay: gameState.getStayForPet(pet!.id),
-              onFeed:  () => gameState.feedPet(),
-              onPlay:  () => gameState.playWithPet(),
-              onBathe: () => gameState.bathePet(),
-              onDeliver: () => _handleDeliver(context, gameState, game, gameState.getStayForPet(pet!.id)!),
-            ),
-            _ActionBar(gameState: gameState),
+            if (isExpanded)
+              PetInfoPanel(
+                pet: pet!,
+                stay: gameState.getStayForPet(pet!.id),
+                onFeed:  () => _startFeedMinigame(context, gameState, pet!),
+                onPlay:  () => game.startPlayMinigame(pet!),
+                onBathe: () => _startBathMinigame(context, gameState, pet!),
+                onDeliver: () => _handleDeliver(context, gameState, game, gameState.getStayForPet(pet!.id)!),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Text(PetInfoPanel.speciesEmoji(pet!.species), style: const TextStyle(fontSize: 28)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(pet!.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.brown)),
+                          Text(PetInfoPanel.actionLabel(pet!.currentAction), style: TextStyle(fontSize: 13, color: Colors.brown[400])),
+                        ],
+                      ),
+                    ),
+                    _MiniStat('❤️', pet!.stats.happiness),
+                    const SizedBox(width: 8),
+                    _MiniStat('⚡', pet!.stats.energy),
+                  ],
+                ),
+              ),
+            _ActionBar(gameState: gameState, game: game, pet: pet!),
           ] else
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
@@ -379,12 +433,30 @@ class _BottomHud extends StatelessWidget {
   }
 }
 
+class _MiniStat extends StatelessWidget {
+  final String emoji;
+  final double value;
+  const _MiniStat(this.emoji, this.value);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 2),
+        Text(value.toInt().toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.brown)),
+      ],
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Action bar (horizontal scroll of all actions)
 // ─────────────────────────────────────────────────────────────────────────────
 class _ActionBar extends StatelessWidget {
   final GameState gameState;
-  const _ActionBar({required this.gameState});
+  final MyPetGame game;
+  final Pet pet;
+  const _ActionBar({required this.gameState, required this.game, required this.pet});
 
   @override
   Widget build(BuildContext context) {
@@ -395,11 +467,11 @@ class _ActionBar extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         child: Row(
           children: [
-            _actionBtn('🍖', 'Comer',  () => gameState.feedPet()),
+            _actionBtn('🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
             _actionBtn('💧', 'Beber',  () => gameState.drinkPet()),
-            _actionBtn('🎾', 'Jugar',  () => gameState.playWithPet()),
-            _actionBtn('🧼', 'Bañar',  () => gameState.bathePet()),
-            _actionBtn('❤️', 'Mimos',  () => gameState.petPet()),
+            _actionBtn('🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
+            _actionBtn('🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
+            _actionBtn('❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
             _actionBtn('😴', 'Dormir', () => gameState.sleepPet()),
             _actionBtn('🚶', 'Pasear', () => gameState.walkPet()),
           ],
@@ -443,8 +515,9 @@ class _ActionBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ActionGrid extends StatelessWidget {
   final GameState gameState;
+  final MyPetGame game;
   final Pet pet;
-  const _ActionGrid({required this.gameState, required this.pet});
+  const _ActionGrid({required this.gameState, required this.game, required this.pet});
 
   @override
   Widget build(BuildContext context) {
@@ -455,11 +528,11 @@ class _ActionGrid extends StatelessWidget {
         runSpacing: 8,
         alignment: WrapAlignment.center,
         children: [
-          _actionBtn('🍖', 'Comer',  () => gameState.feedPet()),
+          _actionBtn('🍖', 'Comer',  () => _startFeedMinigame(context, gameState, pet)),
           _actionBtn('💧', 'Beber',  () => gameState.drinkPet()),
-          _actionBtn('🎾', 'Jugar',  () => gameState.playWithPet()),
-          _actionBtn('🧼', 'Bañar',  () => gameState.bathePet()),
-          _actionBtn('❤️', 'Mimos',  () => gameState.petPet()),
+          _actionBtn('🎾', 'Jugar',  () => game.startPlayMinigame(pet)),
+          _actionBtn('🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
+          _actionBtn('❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
           _actionBtn('😴', 'Dormir', () => gameState.sleepPet()),
           _actionBtn('🚶', 'Pasear', () => gameState.walkPet()),
         ],
@@ -502,23 +575,49 @@ class _ReceptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final player = gameState.player;
-    if (player == null || player.activePets.length >= player.capacity) {
-      return const SizedBox.shrink();
-    }
+    if (player == null) return const SizedBox.shrink();
+
+    final activeCount = player.activePets.length;
+    final maxCapacity = player.capacity;
+    final isFull = activeCount >= maxCapacity;
+
     return Positioned(
       top: 12,
       right: 12,
-      child: ElevatedButton.icon(
-        onPressed: () => _triggerReceptionSequence(context, gameState, game),
-        icon: const Icon(Icons.doorbell, size: 24),
-        label: const Text('Recepción', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[400],
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          elevation: 5,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange, width: 2),
+            ),
+            child: Text(
+              isFull ? 'Guardería llena ($activeCount/$maxCapacity)' : 'Ocupación: $activeCount / $maxCapacity',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isFull ? Colors.red : Colors.brown,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          if (!isFull)
+            ElevatedButton.icon(
+              onPressed: () => _triggerReceptionSequence(context, gameState, game),
+              icon: const Icon(Icons.doorbell, size: 24),
+              label: const Text('Recepción', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[400],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                elevation: 5,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -554,7 +653,7 @@ class _ReceptionButton extends StatelessWidget {
       personality: personality,
       clientName: clientName,
       clientRequest: request,
-      stats: PetStats(hunger: 50, energy: 50, happiness: 50, hygiene: 50, thirst: 50),
+      stats: PetStats.random(species: selectedSp, personality: personality),
     );
 
     // Disable button temporarily or just start sequence
@@ -652,6 +751,39 @@ class _NoSelectionHint extends StatelessWidget {
       ),
     );
   }
+}
+
+void _startFeedMinigame(BuildContext context, GameState gs, Pet pet) {
+  showDialog<CareMinigameResult>(
+    context: context,
+    builder: (ctx) => EatMinigame(pet: pet),
+  ).then((result) {
+    if (result != null && !result.cancelled) {
+       gs.feedPet(result: result);
+    }
+  });
+}
+
+void _startBathMinigame(BuildContext context, GameState gs, Pet pet) {
+  showDialog<CareMinigameResult>(
+    context: context,
+    builder: (ctx) => BathMinigame(pet: pet),
+  ).then((result) {
+    if (result != null && !result.cancelled) {
+       gs.bathePet(result: result);
+    }
+  });
+}
+
+void _startPettingMinigame(BuildContext context, GameState gs, Pet pet) {
+  showDialog<CareMinigameResult>(
+    context: context,
+    builder: (ctx) => PettingMinigame(pet: pet),
+  ).then((result) {
+    if (result != null && !result.cancelled) {
+       gs.petPet(result: result);
+    }
+  });
 }
 
 void _handleDeliver(BuildContext context, GameState gs, MyPetGame game, BoardingStay stay) {
