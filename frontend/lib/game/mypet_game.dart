@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import '../../data/local/game_state.dart';
 import 'components/pet_graphic_component.dart';
 import 'components/nursery_objects.dart';
@@ -280,35 +281,72 @@ class NurseryBackgroundComponent extends PositionComponent with HasGameReference
     final w = size.x, h = size.y;
 
     // ── Wall ──────────────────────────────────────────────────────────────
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, h * 0.30),
-        Paint()..color = const Color(0xFFFBE9E7));
-    canvas.drawRect(Rect.fromLTWH(0, h * 0.28, w, h * 0.025),
-        Paint()..color = const Color(0xFFFFCCBC));
+    // Wall gradient (darker at bottom for ambient occlusion)
+    final wallPaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(0, 0),
+        Offset(0, h * 0.30),
+        [const Color(0xFFFFF3E0), const Color(0xFFFFCCBC)],
+      );
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h * 0.30), wallPaint);
+
+    // Wallpaper stripes (subtle)
+    final stripePaint = Paint()..color = Colors.white.withValues(alpha: 0.2);
+    for (double x = 0; x < w; x += 60) {
+      canvas.drawRect(Rect.fromLTWH(x, 0, 30, h * 0.30), stripePaint);
+    }
+
+    // Baseboard (zócalo) with depth
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.28, w, h * 0.02), Paint()..color = const Color(0xFFEFEBE9));
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.30, w, 2), Paint()..color = const Color(0xFFBCAAA4)); // Shadow edge
 
     // ── Floor ─────────────────────────────────────────────────────────────
-    canvas.drawRect(Rect.fromLTWH(0, h * 0.30, w, h * 0.70),
-        Paint()..color = const Color(0xFFD7CCC8));
-    final plank = Paint()
-      ..color     = const Color(0xFFBCAAA4)
+    // Isometric depth gradient for the floor
+    final floorPaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(0, h * 0.30),
+        Offset(0, h),
+        [const Color(0xFFA1887F), const Color(0xFFD7CCC8)], // Darker at back
+      );
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.30, w, h * 0.70), floorPaint);
+
+    // Floor planks with perspective illusion (diagonal or fading)
+    final plankPaint = Paint()
+      ..color = const Color(0xFF8D6E63).withValues(alpha: 0.3)
       ..strokeWidth = 2
-      ..style     = PaintingStyle.stroke;
-    for (int x = 0; x < w; x += 40) {
-      canvas.drawLine(Offset(x.toDouble(), h * 0.30), Offset(x.toDouble(), h), plank);
+      ..style = PaintingStyle.stroke;
+    
+    // Draw horizontal plank lines that get wider apart
+    for (double y = h * 0.35; y < h; y += (y - h * 0.30) * 0.2) {
+      canvas.drawLine(Offset(0, y), Offset(w, y), plankPaint);
+    }
+    // Draw vertical planks
+    for (double x = 0; x < w; x += 50) {
+      canvas.drawLine(Offset(x, h * 0.30), Offset(x, h), plankPaint);
     }
 
     // ── Door ──────────────────────────────────────────────────────────────
-    // Door shadow
-    canvas.drawRect(Rect.fromLTWH(w * 0.80 - 5, h * 0.04 + 5, 80, h * 0.26),
-        Paint()..color = Colors.black.withValues(alpha: 0.1));
+    // Door shadow on wall
+    canvas.drawRect(Rect.fromLTWH(w * 0.80 - 10, h * 0.04 + 10, 80, h * 0.26),
+        Paint()..color = Colors.black.withValues(alpha: 0.15));
     // Door frame
-    canvas.drawRect(Rect.fromLTWH(w * 0.80 - 4, h * 0.04 - 4, 88, h * 0.26 + 4),
-        Paint()..color = const Color(0xFF6D4C41));
+    canvas.drawRect(Rect.fromLTWH(w * 0.80 - 6, h * 0.04 - 6, 92, h * 0.26 + 6),
+        Paint()..color = const Color(0xFF5D4037));
+    // Door depth
+    canvas.drawRect(Rect.fromLTWH(w * 0.80 - 2, h * 0.04 - 2, 84, h * 0.26 + 2),
+        Paint()..color = const Color(0xFF3E2723));
     // Door
     canvas.drawRect(Rect.fromLTWH(w * 0.80, h * 0.04, 80, h * 0.26),
         Paint()..color = const Color(0xFF8D6E63));
+    
+    // Door panels
+    final panelPaint = Paint()..color = const Color(0xFF6D4C41)..style = PaintingStyle.stroke..strokeWidth = 2;
+    canvas.drawRect(Rect.fromLTWH(w * 0.80 + 10, h * 0.06, 60, h * 0.08), panelPaint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.80 + 10, h * 0.16, 60, h * 0.12), panelPaint);
+
     // Doorknob
-    canvas.drawCircle(Offset(w * 0.80 + 15, h * 0.17), 5,
-        Paint()..color = Colors.yellow[700]!);
+    canvas.drawCircle(Offset(w * 0.80 + 15, h * 0.17), 5, Paint()..color = const Color(0xFFFFD54F));
+    canvas.drawCircle(Offset(w * 0.80 + 15, h * 0.17), 2, Paint()..color = const Color(0xFFFFECB3)); // Highlight
   }
 }
 

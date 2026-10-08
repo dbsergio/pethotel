@@ -37,10 +37,25 @@ class GameState extends ChangeNotifier {
         // Solo sobrescribimos si el remoto es mayor Y el local no ha cambiado mientras descargábamos
         if (player == null || (remotePlayer.revision > player!.revision && !changedDuringFetch)) {
           player = remotePlayer;
+          
+          bool addedInitialItems = false;
+          if (player!.inventory.isEmpty) {
+            player!.inventory['food_basic'] = 2;
+            player!.inventory['soap_basic'] = 1;
+            addedInitialItems = true;
+          }
+          
           // Guardar en local storage para futuras cargas rápidas
           await repository.savePlayer(player!);
-          // Como acaba de venir del servidor, no necesita sincronizarse
-          await LocalStorage.prefs.setBool('sync_pending', false);
+          
+          if (!addedInitialItems) {
+            // Como acaba de venir del servidor, no necesita sincronizarse
+            await LocalStorage.prefs.setBool('sync_pending', false);
+            syncService.markSynced();
+          } else {
+            // Si inyectamos ítems iniciales que no estaban en el servidor, forzamos sync
+            syncService.markPending();
+          }
         } else if (remotePlayer.revision < player!.revision || changedDuringFetch) {
           // El local es más reciente (o ha avanzado durante la descarga) -> forzar sync
           syncService.markPending();
@@ -56,6 +71,11 @@ class GameState extends ChangeNotifier {
           'soap_basic': 1,
         },
       );
+      await repository.savePlayer(player!);
+    } else if (player!.inventory.isEmpty) {
+      // Caso fallback si se carga puramente de local storage y vino vacío (poco probable)
+      player!.inventory['food_basic'] = 2;
+      player!.inventory['soap_basic'] = 1;
       await repository.savePlayer(player!);
     }
     notifyListeners();
@@ -307,6 +327,7 @@ class GameState extends ChangeNotifier {
     // Trigger walk out animation
     pet.currentAction = PetAction.walking_out;
     pet.currentActionId = const Uuid().v4();
+    pet.currentActionMessage = '¡Adiós! +$reward 💰';
     
     player!.activeStays.remove(stay);
     player!.completedStays.add(stay);
@@ -353,7 +374,14 @@ class GameState extends ChangeNotifier {
     pet.stats.hunger += res?.statChanges['hunger'] ?? 20;
     pet.stats.happiness += res?.statChanges['happiness'] ?? 3;
     pet.stats.clamp();
-    pet.currentActionMessage = '+${(res?.statChanges['hunger'] ?? 20).toInt()} Hambre';
+    
+    int consumed = 0;
+    if (res != null && res.consumedItems.containsKey('food_basic')) {
+      consumed = res.consumedItems['food_basic'] as int;
+    }
+    
+    pet.currentActionMessage = '+${(res?.statChanges['hunger'] ?? 20).toInt()} Hambre' + 
+      (consumed > 0 ? '\n- $consumed Comida' : '');
     pet.currentAction = PetAction.eating;
     
     // Deduct consumed items
@@ -409,7 +437,14 @@ class GameState extends ChangeNotifier {
     final res = pet.minigameResult;
     pet.stats.hygiene += res?.statChanges['hygiene'] ?? 30;
     pet.stats.clamp();
-    pet.currentActionMessage = '+${(res?.statChanges['hygiene'] ?? 30).toInt()} Limpieza';
+    
+    int consumed = 0;
+    if (res != null && res.consumedItems.containsKey('soap_basic')) {
+      consumed = res.consumedItems['soap_basic'] as int;
+    }
+    
+    pet.currentActionMessage = '+${(res?.statChanges['hygiene'] ?? 30).toInt()} Limpieza' + 
+      (consumed > 0 ? '\n- $consumed Jabón' : '');
     pet.currentAction = PetAction.bathing;
     
     // Deduct consumed items

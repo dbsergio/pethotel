@@ -19,6 +19,7 @@ class GameSyncService extends ChangeNotifier {
     // Check initial state
     if (LocalStorage.prefs.getBool('sync_pending') == true) {
       _setStatus(SyncStatus.pending);
+      _scheduleSync();
     }
   }
 
@@ -29,9 +30,12 @@ class GameSyncService extends ChangeNotifier {
     }
   }
 
+  void markSynced() {
+    _setStatus(SyncStatus.synced);
+  }
+
   void markPending() {
     if (_status == SyncStatus.conflict) {
-      // Do not overwrite conflict status or schedule a sync that will inevitably fail.
       return;
     }
     _setStatus(SyncStatus.pending);
@@ -51,7 +55,7 @@ class GameSyncService extends ChangeNotifier {
     _setStatus(SyncStatus.syncing);
     
     try {
-      await localRepo.syncPending(); // Modificado para hacer post a MongoDB
+      await localRepo.syncPending();
       
       final conflict = LocalStorage.prefs.getBool('sync_conflict') ?? false;
       if (conflict) {
@@ -59,13 +63,18 @@ class GameSyncService extends ChangeNotifier {
       } else {
         final pending = LocalStorage.prefs.getBool('sync_pending') ?? false;
         if (pending) {
-          _setStatus(SyncStatus.error); // Network error probably
+          // Si sigue pendiente después de intentar sincronizar, probablemente hubo un error de red
+          // o el usuario modificó el estado *durante* el request. En cualquier caso, debe seguir pendiente.
+          _setStatus(SyncStatus.pending);
+          _scheduleSync(); // Reintentar
         } else {
           _setStatus(SyncStatus.synced);
         }
       }
     } catch (e) {
-      _setStatus(SyncStatus.error);
+      // Error no capturado por el repo, mantenerse pendiente
+      _setStatus(SyncStatus.pending);
+      _scheduleSync();
     }
   }
 

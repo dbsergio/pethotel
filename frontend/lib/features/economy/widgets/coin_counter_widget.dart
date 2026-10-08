@@ -11,14 +11,14 @@ class CoinCounterWidget extends StatelessWidget {
       builder: (context, gameState, child) {
         final coins = gameState.player?.coins ?? 0;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.yellow[100],
+            gradient: const LinearGradient(colors: [Color(0xFF5D4037), Color(0xFF4E342E)]),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.orange.shade400, width: 2),
+            border: Border.all(color: const Color(0xFFFFD54F), width: 2),
             boxShadow: const [
               BoxShadow(
-                color: Colors.black12,
+                color: Colors.black38,
                 blurRadius: 4,
                 offset: Offset(0, 2),
               ),
@@ -28,14 +28,23 @@ class CoinCounterWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('💰', style: TextStyle(fontSize: 18)),
-              const SizedBox(width: 6),
-              Text(
-                '$coins',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.brown,
-                ),
+              const SizedBox(width: 8),
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: coins.toDouble(), end: coins.toDouble()),
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Text(
+                    value.toInt().toString(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFFFE082),
+                      letterSpacing: 1.1,
+                      shadows: [Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 2)],
+                    ),
+                  );
+                },
               ),
             ],
           ),

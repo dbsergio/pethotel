@@ -49,15 +49,18 @@ class _NurseryScreenState extends State<NurseryScreen> {
     final isDesktop = screenWidth >= kDesktopBreakpoint;
 
     return Scaffold(
-      backgroundColor: Colors.lightGreen[100],
+      backgroundColor: const Color(0xFFFFF3E0),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            _TopBar(game: _game),
-            Expanded(
+            Positioned.fill(
               child: isDesktop
                   ? _DesktopLayout(game: _game)
                   : _MobileLayout(game: _game),
+            ),
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: _TopBar(game: _game),
             ),
           ],
         ),
@@ -76,32 +79,42 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.white.withValues(alpha: 0.95),
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF6D4C41),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF4E342E), width: 4),
+        boxShadow: const [BoxShadow(color: Colors.black26, offset: Offset(0, 4), blurRadius: 4)],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text(
-            '🐾 MYPET Guardería',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.brown),
+            '🐾 MYPET',
+            style: TextStyle(
+              fontSize: 22, 
+              fontWeight: FontWeight.w900, 
+              color: Color(0xFFFFE082),
+              shadows: [Shadow(color: Colors.black54, offset: Offset(1, 2), blurRadius: 2)],
+              letterSpacing: 1.2,
+            ),
           ),
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.store, color: Colors.orange, size: 28),
-                tooltip: 'Tienda',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ShopScreen()),
-                ),
+              _buildHudIconButton(
+                context, 
+                icon: Icons.store_rounded, 
+                color: Colors.orange[300]!, 
+                tooltip: 'Tienda', 
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
               ),
-              IconButton(
-                icon: const Icon(Icons.backpack, color: Colors.blue, size: 28),
-                tooltip: 'Inventario',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const InventoryScreen()),
-                ),
+              _buildHudIconButton(
+                context, 
+                icon: Icons.backpack_rounded, 
+                color: Colors.lightBlue[300]!, 
+                tooltip: 'Inventario', 
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InventoryScreen())),
               ),
               Consumer<GameState>(
                 builder: (_, gs, __) {
@@ -114,27 +127,46 @@ class _TopBar extends StatelessWidget {
                   );
                 },
               ),
-              IconButton(
-                icon: const Icon(Icons.person, color: Colors.blueGrey, size: 28),
-                tooltip: 'Cuenta',
-                onPressed: () {
-                  _showAuthDialog(context);
-                },
+              _buildHudIconButton(
+                context, 
+                icon: Icons.person_rounded, 
+                color: Colors.white70, 
+                tooltip: 'Cuenta', 
+                onPressed: () => _showAuthDialog(context),
               ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.grey),
-                onSelected: (value) {
-                  if (value == 'dev') {
-                    _showDevOptions(context);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'dev', child: Text('Opciones de Desarrollo')),
-                ],
+              Theme(
+                data: Theme.of(context).copyWith(iconTheme: const IconThemeData(color: Colors.white70)),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    if (value == 'dev') _showDevOptions(context);
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'dev', child: Text('Opciones de Desarrollo')),
+                  ],
+                ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHudIconButton(BuildContext context, {required IconData icon, required Color color, required String tooltip, required VoidCallback onPressed}) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5D4037),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF3E2723), width: 2),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 22),
+        tooltip: tooltip,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.zero,
+        onPressed: onPressed,
       ),
     );
   }
@@ -192,30 +224,39 @@ class _SyncIndicator extends StatelessWidget {
         Color color;
         String tooltip;
 
-        if (!isLoggedIn) {
-          icon = Icons.cloud_off;
-          color = Colors.grey;
-          tooltip = '☁ Solo local';
-        } else {
-          switch (syncService.status) {
-            case import_game_sync.SyncStatus.synced:
-              icon = Icons.cloud_done; color = Colors.green; tooltip = '☁ Guardado'; break;
-            case import_game_sync.SyncStatus.syncing:
-              icon = Icons.cloud_upload; color = Colors.blue; tooltip = '☁ Sincronizando...'; break;
-            case import_game_sync.SyncStatus.pending:
-              icon = Icons.cloud_queue; color = Colors.orange; tooltip = '⚠ Pendiente de sincronizar'; break;
-            case import_game_sync.SyncStatus.error:
-              icon = Icons.cloud_off; color = Colors.red; tooltip = '⚠ Sin conexión'; break;
-            case import_game_sync.SyncStatus.conflict:
-              icon = Icons.warning; color = Colors.red; tooltip = '⚠ Conflicto de sincronización'; break;
+          if (!isLoggedIn) {
+            icon = Icons.cloud_off;
+            color = Colors.grey[400]!;
+            tooltip = 'Solo local';
+          } else {
+            switch (syncService.status) {
+              case import_game_sync.SyncStatus.synced:
+                icon = Icons.cloud_done; color = Colors.greenAccent; tooltip = 'Guardado'; break;
+              case import_game_sync.SyncStatus.syncing:
+                icon = Icons.cloud_upload; color = Colors.lightBlueAccent; tooltip = 'Sincronizando...'; break;
+              case import_game_sync.SyncStatus.pending:
+                icon = Icons.cloud_queue; color = Colors.orangeAccent; tooltip = 'Pendiente'; break;
+              case import_game_sync.SyncStatus.error:
+                icon = Icons.cloud_off; color = Colors.redAccent; tooltip = 'Error de conexión'; break;
+              case import_game_sync.SyncStatus.conflict:
+                icon = Icons.warning; color = Colors.redAccent; tooltip = 'Conflicto de sincronización'; break;
+            }
           }
-        }
-        
-        return Tooltip(
-          message: tooltip,
-          child: Icon(icon, color: color, size: 20),
-        );
-      },
+
+          return Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF5D4037),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF3E2723), width: 2),
+            ),
+            width: 40,
+            height: 40,
+            child: Tooltip(
+              message: tooltip,
+              child: Icon(icon, color: color, size: 20),
+            ),
+          );
+        },
     );
   }
 }
@@ -467,21 +508,26 @@ class _ActionBar extends StatelessWidget {
           ElevatedButton(
             onPressed: onTap,
             style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(18),
-              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFF6D4C41), width: 3),
+              ),
+              padding: const EdgeInsets.all(16),
+              backgroundColor: const Color(0xFFFFF3E0),
               foregroundColor: Colors.brown,
-              elevation: 3,
+              elevation: 4,
+              shadowColor: Colors.black54,
             ),
-            child: Text(icon, style: const TextStyle(fontSize: 22)),
+            child: Text(icon, style: const TextStyle(fontSize: 24)),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 6),
           Text(label,
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.brown,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF4E342E),
                   fontSize: 12,
-                  shadows: [Shadow(color: Colors.white, blurRadius: 8)])),
+                  letterSpacing: 0.5,
+                  shadows: [Shadow(color: Colors.white, blurRadius: 4)])),
         ],
       ),
     );
@@ -525,18 +571,22 @@ class _ActionGrid extends StatelessWidget {
         ElevatedButton(
           onPressed: onTap,
           style: ElevatedButton.styleFrom(
-            shape: const CircleBorder(),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF6D4C41), width: 3),
+            ),
             padding: const EdgeInsets.all(14),
-            backgroundColor: Colors.white,
+            backgroundColor: const Color(0xFFFFF3E0),
             foregroundColor: Colors.brown,
-            elevation: 3,
+            elevation: 4,
+            shadowColor: Colors.black54,
           ),
           child: Text(icon, style: const TextStyle(fontSize: 20)),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(label,
             style: const TextStyle(
-                fontWeight: FontWeight.bold, color: Colors.brown, fontSize: 11)),
+                fontWeight: FontWeight.w900, color: Color(0xFF4E342E), fontSize: 11, letterSpacing: 0.5)),
       ],
     );
   }
@@ -560,24 +610,25 @@ class _ReceptionButton extends StatelessWidget {
     final isFull = activeCount >= maxCapacity;
 
     return Positioned(
-      top: 12,
-      right: 12,
+      top: 80,
+      right: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange, width: 2),
+              color: const Color(0xFF8D6E63),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF5D4037), width: 3),
+              boxShadow: const [BoxShadow(color: Colors.black38, offset: Offset(2, 4), blurRadius: 4)],
             ),
             child: Text(
-              isFull ? 'Guardería llena ($activeCount/$maxCapacity)' : 'Ocupación: $activeCount / $maxCapacity',
+              isFull ? 'Lleno ($activeCount/$maxCapacity)' : 'Ocupación: $activeCount/$maxCapacity',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isFull ? Colors.red : Colors.brown,
+                color: isFull ? const Color(0xFFFF8A65) : const Color(0xFFFFE082),
                 fontSize: 14,
               ),
             ),
@@ -586,13 +637,17 @@ class _ReceptionButton extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () => _triggerReceptionSequence(context, gameState, game),
               icon: const Icon(Icons.doorbell, size: 24),
-              label: const Text('Recepción', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: const Text('Recepción', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[400],
+                backgroundColor: const Color(0xFFD84315),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                elevation: 5,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Color(0xFFBF360C), width: 3),
+                ),
+                elevation: 6,
+                shadowColor: Colors.black54,
               ),
             ),
         ],

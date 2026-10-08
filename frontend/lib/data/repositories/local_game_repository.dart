@@ -10,6 +10,8 @@ class LocalGameRepository implements GameRepository {
   final String _playerKey = 'player_data';
   final String _syncUrl = '${AppConfig.baseUrl}/api/game/save';
 
+  http.Client httpClient = http.Client();
+
   @override
   Future<Player?> loadPlayer(String playerId) async {
     final prefs = LocalStorage.prefs;
@@ -69,10 +71,11 @@ class LocalGameRepository implements GameRepository {
       final headers = {'Content-Type': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
-      final response = await http.post(
+      final jsonStrToSend = jsonEncode(player.toJson());
+      final response = await httpClient.post(
         Uri.parse(_syncUrl),
         headers: headers,
-        body: jsonEncode(player.toJson()),
+        body: jsonStrToSend,
       );
       
       print('Response statusCode: ${response.statusCode}');
@@ -84,15 +87,27 @@ class LocalGameRepository implements GameRepository {
           final serverSave = json['save'];
           final newRevision = serverSave['revision'] as int;
           
-          // Re-load the local player to avoid overwriting changes made during the HTTP call
+          bool localChangedDuringSync = false;
           final currentLocalJsonStr = prefs.getString('${_playerKey}_$playerId');
           if (currentLocalJsonStr != null) {
             final Map<String, dynamic> currentLocalJson = jsonDecode(currentLocalJsonStr);
+            
+            // Check if local state changed during the HTTP request (ignoring revision)
+            final Map<String, dynamic> sentJsonMap = jsonDecode(jsonStrToSend);
+            sentJsonMap.remove('revision');
+            final Map<String, dynamic> currentLocalMapCheck = Map.from(currentLocalJson);
+            currentLocalMapCheck.remove('revision');
+            if (jsonEncode(sentJsonMap) != jsonEncode(currentLocalMapCheck)) {
+              localChangedDuringSync = true;
+            }
+
             currentLocalJson['revision'] = newRevision;
             await prefs.setString('${_playerKey}_$playerId', jsonEncode(currentLocalJson));
           }
           
-          await prefs.setBool('sync_pending', false);
+          if (!localChangedDuringSync) {
+            await prefs.setBool('sync_pending', false);
+          }
           await prefs.setBool('sync_conflict', false);
         } else if (json['status'] == 'CONFLICT') {
           await prefs.setBool('sync_conflict', true);

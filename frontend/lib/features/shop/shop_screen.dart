@@ -147,9 +147,21 @@ class _ShopItemCard extends StatelessWidget {
                               if (success && context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('¡Compraste ${item.name}!'),
-                                    duration: const Duration(seconds: 1),
-                                    backgroundColor: Colors.green,
+                                    content: Row(
+                                      children: [
+                                        const Text('✅ ', style: TextStyle(fontSize: 18)),
+                                        Expanded(child: Text('¡Compraste ${item.name}! -${item.price} 💰', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFFFE082)))),
+                                      ],
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                    backgroundColor: const Color(0xFF5D4037),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.all(16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: const BorderSide(color: Color(0xFF3E2723), width: 2),
+                                    ),
+                                    elevation: 6,
                                   ),
                                 );
                               }
