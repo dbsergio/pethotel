@@ -12,31 +12,32 @@ class ShopScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: const Color(0xFFFFF3E0), // Cream background
         appBar: AppBar(
-          title: const Text('Tienda'),
-          backgroundColor: Colors.orange.shade400,
+          title: const Text('Tienda', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 24, letterSpacing: 1.5)),
+          backgroundColor: const Color(0xFF8D6E63), // Wood color
+          elevation: 4,
+          iconTheme: const IconThemeData(color: Colors.white),
           actions: const [
             Center(child: CoinCounterWidget()),
             SizedBox(width: 16),
           ],
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Consumibles', icon: Icon(Icons.fastfood)),
-              Tab(text: 'Mejoras', icon: Icon(Icons.upgrade)),
+              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🍔', style: TextStyle(fontSize: 18)), SizedBox(width: 8), Text('Consumibles', style: TextStyle(fontWeight: FontWeight.bold))])),
+              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🏗️', style: TextStyle(fontSize: 18)), SizedBox(width: 8), Text('Mejoras', style: TextStyle(fontWeight: FontWeight.bold))])),
             ],
-            indicatorColor: Colors.white,
+            indicatorColor: Color(0xFFFFD54F),
+            indicatorWeight: 4,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
           ),
         ),
-        body: Container(
-          color: Colors.orange.shade50,
-          child: const TabBarView(
-            children: [
-              _ShopCategoryView(category: ItemType.consumable),
-              _ShopCategoryView(category: ItemType.permanent),
-            ],
-          ),
+        body: const TabBarView(
+          children: [
+            _ShopCategoryView(category: ItemType.consumable),
+            _ShopCategoryView(category: ItemType.permanent),
+          ],
         ),
       ),
     );
@@ -74,25 +75,35 @@ class _ShopItemCard extends StatelessWidget {
         final alreadyOwned = item.type == ItemType.permanent && gameState.hasInventoryItem(item.id, 1);
         final qty = gameState.getInventoryQuantity(item.id);
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFD7CCC8), width: 3),
+            boxShadow: const [
+              BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    shape: BoxShape.circle,
+                    color: const Color(0xFFFFE082),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFFCA28), width: 2),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    ],
                   ),
                   child: Center(
                     child: Text(
                       _getIconFor(item),
-                      style: const TextStyle(fontSize: 24),
+                      style: const TextStyle(fontSize: 32),
                     ),
                   ),
                 ),
@@ -105,38 +116,54 @@ class _ShopItemCard extends StatelessWidget {
                         item.name,
                         style: const TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.brown,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF5D4037),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _getDescriptionFor(item),
-                        style: TextStyle(color: Colors.brown.shade400, fontSize: 13),
+                        style: const TextStyle(color: Color(0xFF8D6E63), fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                       if (item.type == ItemType.consumable) ...[
-                        const SizedBox(height: 4),
-                        Text('En inventario: $qty', style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold, fontSize: 12)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFEBE9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text('En inventario: $qty', style: const TextStyle(color: Color(0xFF5D4037), fontWeight: FontWeight.bold, fontSize: 12)),
+                        ),
                       ]
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        const Text('💰', style: TextStyle(fontSize: 14)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${item.price}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: hasCoins ? Colors.orange.shade800 : Colors.red,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: hasCoins ? const Color(0xFFFFF8E1) : const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: hasCoins ? const Color(0xFFFFCA28) : Colors.red.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('💰', style: TextStyle(fontSize: 14)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${item.price}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: hasCoins ? const Color(0xFFF57F17) : Colors.red.shade700,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton(
@@ -167,11 +194,14 @@ class _ShopItemCard extends StatelessWidget {
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: const Color(0xFF66BB6A),
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       ),
-                      child: Text(alreadyOwned ? 'Adquirido' : 'Comprar'),
+                      child: Text(alreadyOwned ? 'Adquirido' : 'Comprar', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                     ),
                   ],
                 ),

@@ -355,8 +355,13 @@ class PetGraphicComponent extends PositionComponent
   @override
   void onTapDown(TapDownEvent event) {
     debugPrint('[INPUT] onTapDown  pet=${pet.name} id=${pet.id} local=${event.localPosition}');
-    gameState.selectPetById(pet.id);
-    showFeedback('✓ ${pet.name}');
+    if (gameState.selectedPetId == pet.id) {
+      gameState.selectPetById(null);
+    } else {
+      gameState.selectPetById(pet.id);
+      showFeedback('✓ ${pet.name}');
+    }
+    event.handled = true;
     super.onTapDown(event);
   }
 

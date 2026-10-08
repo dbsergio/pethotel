@@ -232,7 +232,7 @@ class GameState extends ChangeNotifier {
     );
   }
 
-  void selectPetById(String petId) {
+  void selectPetById(String? petId) {
     if (selectedPetId != petId) {
       selectedPetId = petId;
       debugPrint('[STATE] selectedPetId = $selectedPetId');

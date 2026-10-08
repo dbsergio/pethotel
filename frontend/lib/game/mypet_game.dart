@@ -23,7 +23,7 @@ const double _kHudMargin  = 60;   // don't go behind the HUD bottom padding
 // ─────────────────────────────────────────────────────────────────────────────
 // MyPetGame
 // ─────────────────────────────────────────────────────────────────────────────
-class MyPetGame extends FlameGame with TapCallbacks {
+class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
   static const Offset kFoodBowl  = Offset(0.30, 0.80);
   static const Offset kWaterBowl = Offset(0.38, 0.80);
   static const Offset kBed       = Offset(0.20, 0.45);
@@ -49,24 +49,58 @@ class MyPetGame extends FlameGame with TapCallbacks {
   Color backgroundColor() => Colors.orange[100]!;
 
   Vector2 get virtualSize {
-    const double baseWidth = 800.0;
-    if (size.x < baseWidth) {
-      final ratio = baseWidth / size.x;
-      return Vector2(baseWidth, size.y * ratio);
-    }
-    return size;
+    // We want a minimum world size to guarantee objects are not cramped.
+    // If the screen is larger, we just use the screen size (desktop).
+    final double w = size.x < 800 ? 800 : size.x;
+    final double h = size.y < 600 ? 600 : size.y;
+    return Vector2(w, h);
   }
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    const double baseWidth = 800.0;
-    if (size.x < baseWidth) {
-      camera.viewfinder.zoom = size.x / baseWidth;
-      camera.viewfinder.position = Vector2(virtualSize.x / 2, virtualSize.y / 2);
-    } else {
-      camera.viewfinder.zoom = 1.0;
-      camera.viewfinder.position = Vector2(size.x / 2, size.y / 2);
+    // 1 logical pixel = 1 virtual pixel.
+    camera.viewfinder.zoom = 1.0;
+    _clampCamera();
+  }
+
+  void _clampCamera() {
+    if (!camera.isMounted) return;
+    final visibleWidth = size.x / camera.viewfinder.zoom;
+    final visibleHeight = size.y / camera.viewfinder.zoom;
+
+    final minX = visibleWidth / 2;
+    final maxX = virtualSize.x - visibleWidth / 2;
+    final minY = visibleHeight / 2;
+    final maxY = virtualSize.y - visibleHeight / 2;
+
+    double px = camera.viewfinder.position.x;
+    double py = camera.viewfinder.position.y;
+
+    if (px < minX) px = minX;
+    if (px > maxX) px = maxX;
+    if (py < minY) py = minY;
+    if (py > maxY) py = maxY;
+
+    // Center if visible area is larger than virtual world (desktop)
+    if (visibleWidth >= virtualSize.x) px = virtualSize.x / 2;
+    if (visibleHeight >= virtualSize.y) py = virtualSize.y / 2;
+
+    camera.viewfinder.position = Vector2(px, py);
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    // Move the camera in the opposite direction of the drag to pan the world
+    camera.viewfinder.position -= event.localDelta;
+    _clampCamera();
+  }
+
+  @override
+  void onTapUp(TapUpEvent event) {
+    super.onTapUp(event);
+    if (!event.handled) {
+      gameState.selectPetById(null);
     }
   }
 
