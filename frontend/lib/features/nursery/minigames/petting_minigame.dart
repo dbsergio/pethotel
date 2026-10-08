@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/audio/audio_service.dart';
 import '../../../game/models/pet.dart';
 import '../../../game/minigames/minigame_result.dart';
 
@@ -60,6 +62,15 @@ class _PettingMinigameState extends State<PettingMinigame> {
   }
   
   void _finishGame() {
+    final audio = context.read<AudioService>();
+    if (widget.pet.species == 'dog') {
+      audio.playDogHappy();
+    } else if (widget.pet.species == 'cat') {
+      audio.playCatMeow();
+    } else {
+      audio.playActionPetting();
+    }
+
     final result = CareMinigameResult(
       success: true,
       quality: 1.0,

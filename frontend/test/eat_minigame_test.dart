@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mypet_frontend/features/nursery/minigames/eat_minigame.dart';
 import 'package:mypet_frontend/data/local/game_state.dart';
+import 'package:mypet_frontend/core/audio/audio_service.dart';
 import 'package:mypet_frontend/data/services/game_sync_service.dart';
 import 'package:mypet_frontend/data/repositories/local_game_repository.dart';
 import 'package:mypet_frontend/data/repositories/remote_game_repository.dart';
@@ -20,10 +21,13 @@ class MockGameSyncService extends GameSyncService {
 
 void main() {
   Widget createWidgetUnderTest(GameState gameState, Pet pet) {
-    return MaterialApp(
-      home: ChangeNotifierProvider<GameState>.value(
-        value: gameState,
-        child: Scaffold(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<GameState>.value(value: gameState),
+        ChangeNotifierProvider<AudioService>(create: (_) => AudioService()),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
           body: EatMinigame(pet: pet),
         ),
       ),

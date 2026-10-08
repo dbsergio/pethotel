@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/audio/audio_service.dart';
 import '../../../game/models/pet.dart';
 import '../../../game/minigames/minigame_result.dart';
 import '../../../data/local/game_state.dart';
@@ -17,10 +18,11 @@ class _BathMinigameState extends State<BathMinigame> {
   double _cleanliness = 0.0;
   final double _maxCleanliness = 100.0;
   int _availableSoap = 0;
-  
+
   // Track last touch position to calculate distance swiped
   Offset? _lastTouch;
   bool _isFinished = false;
+  DateTime _lastAudioTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -45,7 +47,13 @@ class _BathMinigameState extends State<BathMinigame> {
         }
       });
       _lastTouch = details.localPosition;
-      
+
+      final now = DateTime.now();
+      if (now.difference(_lastAudioTime).inMilliseconds > 800) {
+        context.read<AudioService>().playActionBath();
+        _lastAudioTime = now;
+      }
+
       if (_cleanliness >= _maxCleanliness) {
         _isFinished = true;
         _finishGame();
@@ -56,7 +64,7 @@ class _BathMinigameState extends State<BathMinigame> {
   void _onPanEnd(DragEndDetails details) {
     _lastTouch = null;
   }
-  
+
   void _finishGame() {
     final result = CareMinigameResult(
       success: true,
@@ -118,7 +126,7 @@ class _BathMinigameState extends State<BathMinigame> {
 
     // Dirt opacity decreases as cleanliness increases
     final dirtOpacity = (1.0 - (_cleanliness / _maxCleanliness)).clamp(0.0, 1.0);
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,

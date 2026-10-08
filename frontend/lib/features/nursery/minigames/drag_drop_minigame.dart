@@ -16,6 +16,7 @@ class DragDropMinigame extends StatefulWidget {
   final double thirstChange;
   final double happinessChange;
   final String instructionText;
+  final VoidCallback? onDrop;
 
   const DragDropMinigame({
     super.key,
@@ -30,6 +31,7 @@ class DragDropMinigame extends StatefulWidget {
     this.thirstChange = 0,
     this.happinessChange = 0,
     required this.instructionText,
+    this.onDrop,
   });
 
   @override
@@ -53,6 +55,7 @@ class _DragDropMinigameState extends State<DragDropMinigame> {
       setState(() {
         _portionsInBowl++;
       });
+      widget.onDrop?.call();
     }
   }
 

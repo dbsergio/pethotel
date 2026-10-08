@@ -54,18 +54,24 @@ class _NurseryScreenState extends State<NurseryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF3E0),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: isDesktop
-                  ? _DesktopLayout(game: _game)
-                  : _MobileLayout(game: _game),
-            ),
-            Positioned(
-              top: 0, left: 0, right: 0,
-              child: _TopBar(game: _game, isDesktop: isDesktop),
-            ),
-          ],
+        child: Listener(
+          onPointerDown: (_) {
+            final audio = context.read<AudioService>();
+            if (audio.musicEnabled) audio.playBgm();
+          },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: isDesktop
+                    ? _DesktopLayout(game: _game)
+                    : _MobileLayout(game: _game),
+              ),
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: _TopBar(game: _game, isDesktop: isDesktop),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -564,7 +570,6 @@ class _ActionBar extends StatelessWidget {
             _actionBtn(context, '🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
             _actionBtn(context, '❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
             _actionBtn(context, '😴', 'Dormir', () {
-              context.read<AudioService>().playActionSleep();
               gameState.sleepPet();
             }),
             _actionBtn(context, '🚶', 'Pasear', () {
@@ -639,7 +644,6 @@ class _ActionGrid extends StatelessWidget {
           _actionBtn(context, '🧼', 'Bañar',  () => _startBathMinigame(context, gameState, pet)),
           _actionBtn(context, '❤️', 'Mimos',  () => _startPettingMinigame(context, gameState, pet)),
           _actionBtn(context, '😴', 'Dormir', () {
-            context.read<AudioService>().playActionSleep();
             gameState.sleepPet();
           }),
           _actionBtn(context, '🚶', 'Pasear', () {
@@ -882,8 +886,7 @@ void _startFeedMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => EatMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
-       context.read<AudioService>().playActionEat();
-       if (result.success) context.read<AudioService>().playRewardCoins();
+       if (result.success) context.read<AudioService>().playSuccess();
        gs.feedPet(result: result);
     }
   });
@@ -895,8 +898,7 @@ void _startDrinkMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => DrinkMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
-       context.read<AudioService>().playActionDrink();
-       if (result.success) context.read<AudioService>().playRewardCoins();
+       if (result.success) context.read<AudioService>().playSuccess();
        gs.drinkPet(result: result);
     }
   });
@@ -908,8 +910,7 @@ void _startBathMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => BathMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
-       context.read<AudioService>().playActionBath();
-       if (result.success) context.read<AudioService>().playRewardCoins();
+       if (result.success) context.read<AudioService>().playSuccess();
        gs.bathePet(result: result);
     }
   });
@@ -921,8 +922,7 @@ void _startPettingMinigame(BuildContext context, GameState gs, Pet pet) {
     builder: (ctx) => PettingMinigame(pet: pet),
   ).then((result) {
     if (result != null && !result.cancelled) {
-       context.read<AudioService>().playActionPetting();
-       if (result.success) context.read<AudioService>().playRewardCoins();
+       if (result.success) context.read<AudioService>().playSuccess();
        gs.petPet(result: result);
     }
   });
