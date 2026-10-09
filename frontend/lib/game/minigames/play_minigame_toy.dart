@@ -7,7 +7,7 @@ import '../mypet_game.dart';
 import 'minigame_result.dart';
 import '../components/pet_graphic_component.dart';
 
-class PlayMinigameToy extends PositionComponent with DragCallbacks, HasGameReference<MyPetGame> {
+class PlayMinigameToy extends PositionComponent with HasGameReference<MyPetGame> {
   final Pet pet;
   final GameState gameState;
   final VoidCallback onComplete;
@@ -71,16 +71,13 @@ class PlayMinigameToy extends PositionComponent with DragCallbacks, HasGameRefer
     }
   }
 
-  @override
-  void onDragStart(DragStartEvent event) {
-    super.onDragStart(event);
+  void startDrag(Vector2 worldPosition) {
     _isBeingDragged = true;
-    event.continuePropagation = false;
+    position = worldPosition;
   }
 
-  @override
-  void onDragUpdate(DragUpdateEvent event) {
-    position += event.localDelta;
+  void updateDrag(Vector2 delta) {
+    position += delta;
 
     // Clamp to playable area to respect boundaries
     final playable = game.playableRect;
@@ -93,16 +90,12 @@ class PlayMinigameToy extends PositionComponent with DragCallbacks, HasGameRefer
     if (_waitingForPet) {
       _directPetTo(position);
     }
-    event.continuePropagation = false;
   }
 
-  @override
-  void onDragEnd(DragEndEvent event) {
-    super.onDragEnd(event);
+  void endDrag() {
     _isBeingDragged = false;
     // Restart chase logic once dropped
     _startChase();
-    event.continuePropagation = false;
   }
 
   void _finishGame() {

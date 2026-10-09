@@ -1,14 +1,20 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import '../mypet_game.dart';
 
-class BedComponent extends PositionComponent {
+class BedComponent extends PositionComponent with HasGameReference<MyPetGame> {
   BedComponent({required super.position}) : super(size: Vector2(130, 85), anchor: Anchor.center);
 
   @override
   void render(Canvas canvas) {
+    Color baseColor = const Color(0xFF90CAF9);
+    final variant = game.gameState.getEquippedCosmetic('bed');
+    if (variant == 'bed_pink') baseColor = Colors.pink[200]!;
+    if (variant == 'bed_green') baseColor = Colors.green[300]!;
+
     canvas.drawRRect(
       RRect.fromRectAndRadius(size.toRect(), const Radius.circular(20)),
-      Paint()..color = const Color(0xFF90CAF9),
+      Paint()..color = baseColor,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(size.x/2, size.y/2), width: 100, height: 55), const Radius.circular(10)),
@@ -71,11 +77,16 @@ class BathComponent extends PositionComponent {
   }
 }
 
-class CarpetComponent extends PositionComponent {
+class CarpetComponent extends PositionComponent with HasGameReference<MyPetGame> {
   CarpetComponent({required super.position}) : super(size: Vector2(320, 160), anchor: Anchor.center);
 
   @override
   void render(Canvas canvas) {
-    canvas.drawOval(size.toRect(), Paint()..color = const Color(0xFFA5D6A7));
+    Color baseColor = const Color(0xFFA5D6A7);
+    final variant = game.gameState.getEquippedCosmetic('carpet');
+    if (variant == 'carpet_red') baseColor = Colors.red[300]!;
+    if (variant == 'carpet_purple') baseColor = Colors.purple[300]!;
+
+    canvas.drawOval(size.toRect(), Paint()..color = baseColor);
   }
 }

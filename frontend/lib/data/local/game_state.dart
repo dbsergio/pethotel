@@ -143,7 +143,7 @@ class GameState extends ChangeNotifier {
     
     if (!hasCoins(item.price)) return false;
 
-    if (item.type == ItemType.permanent) {
+    if (item.type == ItemType.permanent || item.type == ItemType.cosmetic) {
       if (hasInventoryItem(itemId, 1)) return false; // Already bought
       
       // Apply permanent effect
@@ -166,6 +166,43 @@ class GameState extends ChangeNotifier {
     await save();
     notifyListeners();
     return true;
+  }
+
+  String getEquippedCosmetic(String category) {
+    if (player == null) return '${category}_default';
+    for (var entry in player!.inventory.entries) {
+      final item = StoreCatalog.items[entry.key];
+      if (item != null && item.cosmeticCategory == category && entry.value == 2) {
+        return entry.key;
+      }
+    }
+    return '${category}_default';
+  }
+
+  Future<void> equipCosmetic(String itemId) async {
+    final item = StoreCatalog.items[itemId];
+    if (item == null || item.type != ItemType.cosmetic || player == null) return;
+    if (!hasInventoryItem(itemId, 1)) return;
+
+    // Unequip currently equipped in this category
+    for (var key in player!.inventory.keys.toList()) {
+      final oldItem = StoreCatalog.items[key];
+      if (oldItem != null && oldItem.cosmeticCategory == item.cosmeticCategory) {
+        if (player!.inventory[key] == 2) {
+          player!.inventory[key] = 1; // Unequip
+        }
+      }
+    }
+    
+    // Equip new item
+    player!.inventory[itemId] = 2;
+    await save();
+    notifyListeners();
+  }
+
+  bool isCosmeticEquipped(String itemId) {
+    if (player == null) return false;
+    return player!.inventory[itemId] == 2;
   }
 
   Future<bool> consumeItem(String itemId, String petId) async {

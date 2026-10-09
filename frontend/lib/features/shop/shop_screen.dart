@@ -11,7 +11,7 @@ class ShopScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFFFFF3E0), // Cream background
         appBar: AppBar(
@@ -25,19 +25,22 @@ class ShopScreen extends StatelessWidget {
           ],
           bottom: const TabBar(
             tabs: [
-              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🍔', style: TextStyle(fontSize: 18)), SizedBox(width: 8), Text('Consumibles', style: TextStyle(fontWeight: FontWeight.bold))])),
-              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🏗️', style: TextStyle(fontSize: 18)), SizedBox(width: 8), Text('Mejoras', style: TextStyle(fontWeight: FontWeight.bold))])),
+              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🍔', style: TextStyle(fontSize: 16)), SizedBox(width: 4), Text('Consumibles', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))])),
+              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🏗️', style: TextStyle(fontSize: 16)), SizedBox(width: 4), Text('Mejoras', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))])),
+              Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🎨', style: TextStyle(fontSize: 16)), SizedBox(width: 4), Text('Cosméticos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))])),
             ],
             indicatorColor: Color(0xFFFFD54F),
             indicatorWeight: 4,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
+            labelPadding: EdgeInsets.zero,
           ),
         ),
         body: const TabBarView(
           children: [
             _ShopCategoryView(category: ItemType.consumable),
             _ShopCategoryView(category: ItemType.permanent),
+            _ShopCategoryView(category: ItemType.cosmetic),
           ],
         ),
       ),
@@ -73,7 +76,8 @@ class _ShopItemCard extends StatelessWidget {
     return Consumer<GameState>(
       builder: (context, gameState, child) {
         final hasCoins = gameState.hasCoins(item.price);
-        final alreadyOwned = item.type == ItemType.permanent && gameState.hasInventoryItem(item.id, 1);
+        final alreadyOwned = (item.type == ItemType.permanent || item.type == ItemType.cosmetic) && gameState.hasInventoryItem(item.id, 1);
+        final isEquipped = item.type == ItemType.cosmetic && gameState.isCosmeticEquipped(item.id);
         final qty = gameState.getInventoryQuantity(item.id);
 
         return Container(
@@ -168,11 +172,20 @@ class _ShopItemCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton(
-                      onPressed: (alreadyOwned || !hasCoins)
+                      onPressed: (alreadyOwned && item.type != ItemType.cosmetic) || (!alreadyOwned && !hasCoins) || isEquipped
                           ? () {
                               context.read<AudioService>().playUiError();
                             }
                           : () async {
+                              if (alreadyOwned && item.type == ItemType.cosmetic) {
+                                // Equip
+                                await gameState.equipCosmetic(item.id);
+                                if (context.mounted) {
+                                  context.read<AudioService>().playShopPurchase(); // Reusing sound
+                                }
+                                return;
+                              }
+                              
                               final success = await gameState.buyItem(item.id);
                               if (success && context.mounted) {
                                 context.read<AudioService>().playShopPurchase();
@@ -198,14 +211,19 @@ class _ShopItemCard extends StatelessWidget {
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF66BB6A),
+                        backgroundColor: isEquipped ? Colors.blue.shade400 : const Color(0xFF66BB6A),
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
                         elevation: 4,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       ),
-                      child: Text(alreadyOwned ? 'Adquirido' : 'Comprar', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      child: Text(
+                        isEquipped ? 'Equipado' : 
+                        (alreadyOwned && item.type == ItemType.cosmetic ? 'Equipar' : 
+                        (alreadyOwned ? 'Adquirido' : 'Comprar')), 
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)
+                      ),
                     ),
                   ],
                 ),
@@ -221,6 +239,8 @@ class _ShopItemCard extends StatelessWidget {
     if (item.id.contains('food')) return '🍖';
     if (item.id.contains('soap')) return '🧼';
     if (item.id.contains('upgrade')) return '🏗️';
+    if (item.id.contains('carpet')) return ' rug';
+    if (item.type == ItemType.cosmetic) return '🎨';
     return '📦';
   }
 
@@ -239,6 +259,9 @@ class _ShopItemCard extends StatelessWidget {
     }
     if (item.type == ItemType.permanent) {
       return 'Mejora permanente para la guardería';
+    }
+    if (item.type == ItemType.cosmetic) {
+      return 'Decoración para tu guardería';
     }
     return '';
   }

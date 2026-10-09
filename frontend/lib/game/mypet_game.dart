@@ -90,10 +90,35 @@ class MyPetGame extends FlameGame with TapCallbacks, DragCallbacks {
   }
 
   @override
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    final toy = world.children.whereType<PlayMinigameToy>().firstOrNull;
+    if (toy != null) {
+      toy.startDrag(camera.globalToLocal(event.localPosition));
+    }
+  }
+
+  @override
   void onDragUpdate(DragUpdateEvent event) {
+    // If the play minigame is active, lock the camera and route the drag to the toy
+    final toy = world.children.whereType<PlayMinigameToy>().firstOrNull;
+    if (toy != null) {
+      toy.updateDrag(event.localDelta);
+      return;
+    }
+
     // Move the camera in the opposite direction of the drag to pan the world
     camera.viewfinder.position -= event.localDelta;
     _clampCamera();
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
+    final toy = world.children.whereType<PlayMinigameToy>().firstOrNull;
+    if (toy != null) {
+      toy.endDrag();
+    }
   }
 
   @override

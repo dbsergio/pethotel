@@ -8,6 +8,7 @@ class ShopItem {
   final int price;
   final int effectValue;
   final EffectType effectType;
+  final String cosmeticCategory;
 
   const ShopItem({
     required this.id,
@@ -16,6 +17,7 @@ class ShopItem {
     required this.price,
     this.effectValue = 0,
     this.effectType = EffectType.none,
+    this.cosmeticCategory = '',
   });
 }
 
@@ -56,6 +58,34 @@ class StoreCatalog {
       name: 'Ampliación de Guardería (Nivel 3)',
       type: ItemType.permanent,
       price: 1200,
+    ),
+    'carpet_red': ShopItem(
+      id: 'carpet_red',
+      name: 'Alfombra Roja',
+      type: ItemType.cosmetic,
+      price: 200,
+      cosmeticCategory: 'carpet',
+    ),
+    'carpet_purple': ShopItem(
+      id: 'carpet_purple',
+      name: 'Alfombra Real',
+      type: ItemType.cosmetic,
+      price: 350,
+      cosmeticCategory: 'carpet',
+    ),
+    'bed_pink': ShopItem(
+      id: 'bed_pink',
+      name: 'Cama Rosada',
+      type: ItemType.cosmetic,
+      price: 250,
+      cosmeticCategory: 'bed',
+    ),
+    'bed_green': ShopItem(
+      id: 'bed_green',
+      name: 'Cama Bosque',
+      type: ItemType.cosmetic,
+      price: 250,
+      cosmeticCategory: 'bed',
     ),
   };
 }

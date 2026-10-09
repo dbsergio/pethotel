@@ -109,18 +109,55 @@ class _TopBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (isDesktop || MediaQuery.sizeOf(context).width > 450)
-            const Text(
-              '🐾 MYPET',
-              style: TextStyle(
-                fontSize: 22, 
-                fontWeight: FontWeight.w900, 
-                color: Color(0xFFFFE082),
-                shadows: [Shadow(color: Colors.black54, offset: Offset(1, 2), blurRadius: 2)],
-                letterSpacing: 1.2,
-              ),
+            Row(
+              children: [
+                const Text(
+                  '🐾 MYPET',
+                  style: TextStyle(
+                    fontSize: 22, 
+                    fontWeight: FontWeight.w900, 
+                    color: Color(0xFFFFE082),
+                    shadows: [Shadow(color: Colors.black54, offset: Offset(1, 2), blurRadius: 2)],
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Consumer<GameState>(
+                  builder: (_, gs, __) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFCC80),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE65100), width: 1.5),
+                    ),
+                    child: Text(
+                      'Nv. ${gs.player?.nurseryLevel ?? 1}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE65100), fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
             )
           else
-            const Text('🐾', style: TextStyle(fontSize: 24)),
+            Row(
+              children: [
+                const Text('🐾', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 4),
+                Consumer<GameState>(
+                  builder: (_, gs, __) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFCC80),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Lv.${gs.player?.nurseryLevel ?? 1}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE65100), fontSize: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           
           Expanded(
             child: Row(
@@ -718,21 +755,32 @@ class _ReceptionButton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: const Color(0xFF8D6E63),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF5D4037), width: 3),
               boxShadow: const [BoxShadow(color: Colors.black38, offset: Offset(2, 4), blurRadius: 4)],
             ),
-            child: Text(
-              isFull ? 'Lleno ($activeCount/$maxCapacity)' : 'Ocupación: $activeCount/$maxCapacity',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isFull ? const Color(0xFFFF8A65) : const Color(0xFFFFE082),
-                fontSize: 14,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.home_work_rounded,
+                  color: isFull ? const Color(0xFFFF8A65) : const Color(0xFFFFE082),
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isFull ? 'Lleno ($activeCount/$maxCapacity)' : 'Plazas: $activeCount/$maxCapacity',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isFull ? const Color(0xFFFF8A65) : const Color(0xFFFFE082),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
           if (!isFull)
