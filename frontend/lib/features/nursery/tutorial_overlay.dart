@@ -78,7 +78,13 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isVisible) return const SizedBox.shrink();
+    if (!_isVisible) {
+      return const Positioned.fill(
+        child: IgnorePointer(
+          child: SizedBox.shrink(),
+        ),
+      );
+    }
 
     final step = _steps[_currentStep];
 
@@ -87,7 +93,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         color: Colors.black.withOpacity(0.5),
         child: Center(
           child: Container(
-            width: 350,
+            width: 450,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3E0),
@@ -112,31 +118,35 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: _finishTutorial,
-                      child: const Text('Omitir', style: TextStyle(color: Colors.grey)),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          '${_currentStep + 1}/${_steps.length}',
-                          style: const TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton(
-                          onPressed: _nextStep,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: _finishTutorial,
+                        child: const Text('Omitir', style: TextStyle(color: Colors.grey)),
+                      ),
+                      const SizedBox(width: 8),
+                      Row(
+                        children: [
+                          Text(
+                            '${_currentStep + 1}/${_steps.length}',
+                            style: const TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
                           ),
-                          child: Text(_currentStep == _steps.length - 1 ? '¡Empezar!' : 'Siguiente'),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _nextStep,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: Text(_currentStep == _steps.length - 1 ? '¡Empezar!' : 'Siguiente'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 )
               ],
             ),
